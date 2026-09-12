@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 1
-- **Phase:** features
-- **Active feature:** (none)
+- **Phase:** implement
+- **Active feature:** 001-app-scaffold
 - **Last updated:** 2026-09-12
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-12 — scheduled iteration 1 slice (001–004); active 001-app-scaffold; phase set to `implement`
 - 2026-09-12 — spec revised: Node HTTP API + local SQLite; phase remains `features`
 - 2026-09-12 — spec revised: login, SQLite tab + history; phase remains `features`
 - 2026-09-12 — first product spec written (6-max NLHE vs computer); phase set to `features`
