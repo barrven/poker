@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 1
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 001-app-scaffold
 - **Last updated:** 2026-09-12
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-12 — validated 001-app-scaffold; phase set to `accept`
 - 2026-09-12 — tested 001-app-scaffold; phase set to `validate`
 - 2026-09-12 — implemented 001-app-scaffold; phase set to `test`
 - 2026-09-12 — scheduled iteration 1 slice (001–004); active 001-app-scaffold; phase set to `implement`
