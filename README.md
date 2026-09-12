@@ -1,4 +1,26 @@
-# single-page-app
+# Poker
+
+No-Limit Texas Hold'em vs computer, play-money chips, local Node + SQLite.
+
+## Run locally
+
+Requires Node 22+.
+
+```
+npm install
+npm run dev
+```
+
+- App: http://localhost:5173
+- API health: http://localhost:3001/api/health
+
+`npm run dev` starts the Vite frontend and the Node HTTP API together. The
+API creates `data/poker.sqlite` on first start.
+
+```
+npm run typecheck
+npm run build
+```
 
 ## Dev loop
 
@@ -30,22 +52,7 @@ loop(
 | `/retro` | close a slice (or mid-slice), feed learnings back into the spec |
 | `/dev-loop` | run the stages above automatically, stopping at `/accept`, `/retro`, an open question, or repeated failure |
 
-Start with `/spec`. From there, either drive stages one at a time or run
-`/dev-loop` and let it chain through until it needs you.
+Drive stages one at a time, or run `/dev-loop` and let it chain through until
+it needs you.
 
 How a slice, retro, and ad-hoc bugs work: [`docs/DEV-LOOP.md`](docs/DEV-LOOP.md).
-
-## Starting a new project
-
-Clone into a **new folder name** (not `scaffold-template`):
-
-```
-git clone https://github.com/barrven/scaffold-template.git my-app
-cd my-app
-```
-
-Then run `/spec`. That replaces this clone's git history with a fresh repo
-so you never push back to the scaffold: **`dev`** is daily work (commit +
-push after every stage), **`master`** is the last accepted product (updated
-on `/accept` and `/retro`). It will offer to create a new GitHub repo.
-The policy the model follows is `.claude/GIT.md`.

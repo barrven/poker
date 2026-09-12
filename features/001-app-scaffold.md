@@ -1,7 +1,7 @@
 ---
 id: 001
 title: App scaffold
-status: backlog
+status: testing
 priority: high
 iteration: 1
 ---
@@ -29,7 +29,15 @@ features have a place to live.
 
 ## Implementation Notes
 
-_Filled in during `/implement` — approach taken, files touched, tradeoffs._
+Vite vanilla-TS app shell on :5173; Node `http` API on :3001; SQLite via
+Node 22 `node:sqlite` at `data/poker.sqlite`. `npm run dev` runs both
+(`concurrently`); Vite proxies `/api`. `GET /api/health` pings the DB.
+
+Files: `package.json`, `vite.config.ts`, `index.html`, `src/*`,
+`server/index.ts`, `server/db.ts`, tsconfigs, `.gitignore`, `README.md`.
+
+Tradeoff: `node:sqlite` is still experimental on Node 22 (startup
+warning) but needs no native addon. No UI framework yet.
 
 ## Test Notes
 
