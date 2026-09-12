@@ -24,5 +24,6 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-12 — spec revised: login, SQLite tab + history; phase remains `features`
 - 2026-09-12 — first product spec written (6-max NLHE vs computer); phase set to `features`
 - 2026-08-31 — scaffold created, phase set to `spec`
