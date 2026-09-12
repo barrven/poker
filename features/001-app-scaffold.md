@@ -1,7 +1,7 @@
 ---
 id: 001
 title: App scaffold
-status: testing
+status: validating
 priority: high
 iteration: 1
 ---
@@ -41,7 +41,15 @@ warning) but needs no native addon. No UI framework yet.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+`node:test` via `tsx --test` (`npm test`). Five tests, all passing.
+
+Covered: SQLite file created on `openDb` and pingable; `GET /api/health`
+returns 200 `{ok:true,db:ok}`; `index.html` + `src/main.ts` are a Poker
+app shell (not an empty page); README documents `npm run dev` and local
+ports with no hosted DB; `typecheck`/`build` scripts exist.
+
+Deliberately not: a real browser hitting Vite; spawning `npm run dev`;
+running `tsc` inside the test process (left to `/validate`).
 
 ## Validation Notes
 

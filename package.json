@@ -9,8 +9,9 @@
     "dev": "concurrently -k -n api,web -c cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "tsx watch server/index.ts",
     "dev:web": "vite",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.node.json --noEmit",
-    "build": "vite build && tsc -p tsconfig.server.json"
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "test": "tsx --test tests/**/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",

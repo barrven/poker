@@ -7,7 +7,7 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 001 | App scaffold | testing | high | 1 | [001-app-scaffold.md](001-app-scaffold.md) |
+| 001 | App scaffold | validating | high | 1 | [001-app-scaffold.md](001-app-scaffold.md) |
 | 002 | Register, log in, and log out | backlog | high | 1 | [002-auth.md](002-auth.md) |
 | 003 | Running tab | backlog | high | 1 | [003-running-tab.md](003-running-tab.md) |
 | 004 | Sit down and leave the table | backlog | high | 1 | [004-sit-table.md](004-sit-table.md) |

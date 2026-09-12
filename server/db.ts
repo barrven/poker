@@ -2,12 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-const dataDir = path.resolve(process.cwd(), "data");
-export const dbPath = path.join(dataDir, "poker.sqlite");
+export const defaultDataDir = path.resolve(process.cwd(), "data");
+export const sqliteFileName = "poker.sqlite";
 
-export function openDb(): DatabaseSync {
+export function sqlitePath(dataDir = defaultDataDir): string {
+  return path.join(dataDir, sqliteFileName);
+}
+
+export function openDb(dataDir = defaultDataDir): DatabaseSync {
   fs.mkdirSync(dataDir, { recursive: true });
-  const db = new DatabaseSync(dbPath);
+  const db = new DatabaseSync(sqlitePath(dataDir));
   db.exec(`
     CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY,
