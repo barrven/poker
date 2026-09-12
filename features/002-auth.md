@@ -1,7 +1,7 @@
 ---
 id: 002
 title: Register, log in, and log out
-status: validating
+status: accept
 priority: high
 iteration: 1
 ---
@@ -14,23 +14,23 @@ cannot sit at a table.
 
 ## Acceptance Criteria
 
-- [ ] A visitor can register with a username and password and is then
+- [x] A visitor can register with a username and password and is then
       logged in.
-- [ ] Registering with a username that already exists is rejected with
+- [x] Registering with a username that already exists is rejected with
       an error the user can see; no second account is created.
-- [ ] The password is stored hashed in SQLite (not plaintext, not a
+- [x] The password is stored hashed in SQLite (not plaintext, not a
       single SHA). A SQLite inspect of the users table does not reveal
       the original password.
-- [ ] Logging in with the correct username and password starts a
+- [x] Logging in with the correct username and password starts a
       session; wrong password or unknown username is rejected without
       leaking which field was wrong beyond a generic failure.
-- [ ] Logging out ends the session; a subsequent request is treated as
+- [x] Logging out ends the session; a subsequent request is treated as
       logged out.
-- [ ] Reloading the frontend while logged in still shows the player as
+- [x] Reloading the frontend while logged in still shows the player as
       logged in (session cookie or equivalent survives refresh).
-- [ ] A logged-out visitor has no control that sits them at a table
+- [x] A logged-out visitor has no control that sits them at a table
       (sit is hidden or rejected with an auth error).
-- [ ] No email, OAuth, or social-login path is presented.
+- [x] No email, OAuth, or social-login path is presented.
 
 ## Implementation Notes
 
@@ -63,7 +63,36 @@ timing-attack proofs; password-reset.
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-12 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: **gap** — still no lint script or config.
+- typecheck: pass
+- build: pass
+- tests: pass (`npm test` — 13/13)
+
+Live API on :3001 (existing `npm run dev`) with user `val002_1789227870`:
+1. **Pass.** `POST /api/register` → 201 `{"username":"..."}` +
+   `Set-Cookie: poker_session=...; HttpOnly; Path=/; SameSite=Lax`.
+   `GET /api/me` with that cookie → 200 same username.
+2. **Pass.** Second register → 409 `{"error":"That username is taken."}`
+   (shown in guest UI via `.status[data-state=error]`). User count for
+   that name remains 1.
+3. **Pass.** SQLite `password_hash` is `scrypt:<salt>:<hash>`, does not
+   contain the plaintext password.
+4. **Pass.** Wrong password and unknown user both return
+   `{"error":"Invalid username or password"}`.
+5. **Pass.** `POST /api/logout` clears the cookie (`Max-Age=0`);
+   subsequent `GET /api/me` → 401 `Not logged in`.
+6. **Pass (no browser tool).** Cookie is HttpOnly with Max-Age 2592000;
+   frontend `loadSession()` calls `GET /api/me` on load. Cookie reuse
+   against `/api/me` succeeds. A real browser reload was not executed.
+7. **Pass.** Guest markup is register/login only (no sit button).
+   `POST /api/sit` without a session → 401 `Authentication required`.
+8. **Pass.** Username+password forms only; no email/OAuth/social in
+   `src/main.ts` or `server/app.ts`.
+
+Vite :5173 served the Poker app shell (`#app`, `/src/main.ts`).
 
 ## Acceptance Log
 
