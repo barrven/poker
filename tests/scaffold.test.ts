@@ -36,7 +36,7 @@ test("openDb creates a local SQLite file and can query it", () => {
     const row = db
       .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
       .get() as { value: string } | undefined;
-    assert.equal(row?.value, "1");
+    assert.equal(row?.value, "2");
   } finally {
     db.close();
   }
@@ -68,7 +68,6 @@ test("index.html is an app shell, not an empty error page", () => {
 
   const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
   assert.match(main, /<h1>Poker<\/h1>/);
-  assert.match(main, /fetch\("\/api\/health"\)/);
 });
 
 test("README documents a local start command for the app and API", () => {

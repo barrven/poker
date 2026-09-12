@@ -1,7 +1,7 @@
 ---
 id: 002
 title: Register, log in, and log out
-status: backlog
+status: testing
 priority: high
 iteration: 1
 ---
@@ -34,7 +34,18 @@ cannot sit at a table.
 
 ## Implementation Notes
 
-_Filled in during `/implement` — approach taken, files touched, tradeoffs._
+HTTP cookie session (`poker_session`, HttpOnly, SameSite=Lax). Passwords
+hashed with Node `scrypt` (`scrypt:salt:hash` in SQLite), not SHA.
+`POST /api/register|login|logout`, `GET /api/me`. Duplicate username
+returns 409 with a visible error. Failed login always "Invalid username
+or password". Logged-out UI has no sit control; `POST /api/sit` is 401
+without a session.
+
+Files: `server/auth.ts`, `server/app.ts`, `server/db.ts` (users +
+sessions, schema 2), `src/main.ts`, `src/style.css`. Scaffold test
+updated for schema 2.
+
+Tradeoff: no password-reset/email. Sit itself is still 004.
 
 ## Test Notes
 
