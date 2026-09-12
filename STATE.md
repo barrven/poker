@@ -3,10 +3,10 @@
 This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
-- **Outer iteration:** 0
-- **Phase:** spec
+- **Outer iteration:** 1
+- **Phase:** features
 - **Active feature:** (none)
-- **Last updated:** 2026-08-31
+- **Last updated:** 2026-09-12
 
 ## Phases
 
@@ -24,4 +24,5 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-12 — first product spec written (6-max NLHE vs computer); phase set to `features`
 - 2026-08-31 — scaffold created, phase set to `spec`
