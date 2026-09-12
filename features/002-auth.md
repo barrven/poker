@@ -1,7 +1,7 @@
 ---
 id: 002
 title: Register, log in, and log out
-status: testing
+status: validating
 priority: high
 iteration: 1
 ---
@@ -49,7 +49,17 @@ Tradeoff: no password-reset/email. Sit itself is still 004.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+`tests/auth.test.ts` via `npm test` (8 auth tests + 5 scaffold). All pass.
+
+Covered: register returns a session (`GET /api/me`); duplicate username
+409 and still one user row; stored hash is `scrypt:` and not the
+plaintext or a hex SHA; login success vs generic 401 for wrong password
+and unknown user (same message); logout then 401; cookie still works on
+a later `/api/me`; `POST /api/sit` 401 when logged out and no sit button
+in the guest markup; no email/OAuth/social path in UI or API.
+
+Deliberately not: a real browser refresh (cookie reuse stands in);
+timing-attack proofs; password-reset.
 
 ## Validation Notes
 
