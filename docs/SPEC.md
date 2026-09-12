@@ -115,9 +115,11 @@ Explicitly out of scope, so `/features` doesn't invent work for it.
 - Must run in a current desktop or mobile browser without a plugin.
 - Poker rules must be correct (pots, side pots, hand ranks, action
   order). Visual polish is secondary to a legal, readable table.
-- Tech: TypeScript, a modern SPA (Vite), a TypeScript backend that
-  speaks SQLite, and tests that can assert engine rules and persistence
-  without a browser when possible.
+- Tech: TypeScript throughout. Vite SPA in the browser; a small Node
+  HTTP API on the same machine; a local SQLite file for accounts, tab,
+  and history. Tests should assert engine rules and persistence without
+  a browser when possible. No extra database server and no cloud host
+  required for v1.
 - Passwords hashed with a standard password hash (not reversible, not
   a single SHA).
 
@@ -137,3 +139,5 @@ _Appended by `/retro` — what changed about the spec itself and why._
   SPA, no accounts, session-only table
 - 2026-09-12 — add basic username/password login, SQLite-backed running
   tab and hand history; drop client-only/session-only persistence
+- 2026-09-12 — lock server default: Node HTTP API + local SQLite file
+  beside the Vite app
