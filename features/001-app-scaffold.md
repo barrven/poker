@@ -1,7 +1,7 @@
 ---
 id: 001
 title: App scaffold
-status: accept
+status: done
 priority: high
 iteration: 1
 ---
@@ -84,4 +84,6 @@ start. Does not fail health.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-12 — user chose **Accept and continue (Recommended)**:
+"Mark 001 done and start 002 Register, log in, and log out."
+Decision: accepted; continue the slice.
