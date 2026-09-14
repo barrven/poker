@@ -6,12 +6,12 @@ if (!appEl) {
 }
 const app: HTMLDivElement = appEl;
 
-type Session = { username: string };
+type Session = { username: string; tab: number };
 
 type View =
   | { kind: "loading" }
   | { kind: "guest"; error: string }
-  | { kind: "signed-in"; username: string; error: string };
+  | { kind: "signed-in"; username: string; tab: number; error: string };
 
 let view: View = { kind: "loading" };
 
@@ -61,15 +61,27 @@ async function loadSession(): Promise<Session | undefined> {
     throw new Error("session");
   }
   const body: unknown = await response.json();
-  if (
-    typeof body === "object" &&
-    body !== null &&
-    "username" in body &&
-    typeof body.username === "string"
-  ) {
-    return { username: body.username };
+  return parseSession(body);
+}
+
+function parseSession(body: unknown): Session | undefined {
+  if (typeof body !== "object" || body === null) {
+    return undefined;
   }
-  return undefined;
+  if (
+    !("username" in body) ||
+    typeof body.username !== "string" ||
+    !("tab" in body) ||
+    typeof body.tab !== "number" ||
+    !Number.isInteger(body.tab)
+  ) {
+    return undefined;
+  }
+  return { username: body.username, tab: body.tab };
+}
+
+function formatChips(amount: number): string {
+  return amount.toLocaleString("en-US");
 }
 
 function render(): void {
@@ -90,6 +102,7 @@ function render(): void {
       <h1>Poker</h1>
       <p>No-Limit Texas Hold'em vs computer. Play-money chips.</p>
       <p>Logged in as <strong>${escapeHtml(view.username)}</strong>.</p>
+      <p data-tab>Tab: <strong>${escapeHtml(formatChips(view.tab))}</strong> play-money chips.</p>
       ${error}
       <p><button type="button" id="logout">Log out</button></p>
     `;
@@ -163,14 +176,18 @@ async function onRegister(form: HTMLFormElement): Promise<void> {
     return;
   }
   const body: unknown = await response.json();
-  const name =
-    typeof body === "object" &&
-    body !== null &&
-    "username" in body &&
-    typeof body.username === "string"
-      ? body.username
-      : username;
-  view = { kind: "signed-in", username: name, error: "" };
+  const session = parseSession(body) ?? (await loadSession());
+  if (!session) {
+    view = { kind: "guest", error: "Something went wrong." };
+    render();
+    return;
+  }
+  view = {
+    kind: "signed-in",
+    username: session.username,
+    tab: session.tab,
+    error: "",
+  };
   render();
 }
 
@@ -186,14 +203,18 @@ async function onLogin(form: HTMLFormElement): Promise<void> {
     return;
   }
   const body: unknown = await response.json();
-  const name =
-    typeof body === "object" &&
-    body !== null &&
-    "username" in body &&
-    typeof body.username === "string"
-      ? body.username
-      : username;
-  view = { kind: "signed-in", username: name, error: "" };
+  const session = parseSession(body) ?? (await loadSession());
+  if (!session) {
+    view = { kind: "guest", error: "Something went wrong." };
+    render();
+    return;
+  }
+  view = {
+    kind: "signed-in",
+    username: session.username,
+    tab: session.tab,
+    error: "",
+  };
   render();
 }
 
@@ -208,7 +229,12 @@ render();
 try {
   const session = await loadSession();
   view = session
-    ? { kind: "signed-in", username: session.username, error: "" }
+    ? {
+        kind: "signed-in",
+        username: session.username,
+        tab: session.tab,
+        error: "",
+      }
     : { kind: "guest", error: "" };
 } catch {
   view = { kind: "guest", error: "API unreachable. Is npm run dev running?" };

@@ -1,7 +1,7 @@
 ---
 id: 003
 title: Running tab
-status: backlog
+status: testing
 priority: high
 iteration: 1
 ---
@@ -26,7 +26,15 @@ turn it into real money.
 
 ## Implementation Notes
 
-_Filled in during `/implement` — approach taken, files touched, tradeoffs._
+`users.tab INTEGER NOT NULL DEFAULT 1000` (schema 3). Register inserts
+1,000. Existing DBs get `ALTER TABLE` so old rows start at 1,000.
+`GET /api/me` and `POST /api/register|login` return `{ username, tab }`.
+Signed-in UI shows `Tab: 1,000 play-money chips`; `loadSession()` on
+reload. No deposit/withdraw/cash-out controls (top-up is 011). Sit/leave
+still 004.
+
+Files: `server/db.ts`, `server/auth.ts`, `server/app.ts`, `src/main.ts`.
+Auth/scaffold tests updated for tab in `/api/me` and schema 3.
 
 ## Test Notes
 
