@@ -1,7 +1,7 @@
 ---
 id: 002
 title: Register, log in, and log out
-status: accept
+status: done
 priority: high
 iteration: 1
 ---
@@ -96,4 +96,6 @@ Vite :5173 served the Poker app shell (`#app`, `/src/main.ts`).
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-14 — user chose **Accept and continue**:
+"Mark 002 done, then implement 003 Running tab next."
+Decision: accepted; continue the slice.

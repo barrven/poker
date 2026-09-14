@@ -7,6 +7,14 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-14 — Register, log in, and log out (features/002-auth.md)
+
+Players can register with a username and password, log in, and log out.
+The session survives a page refresh (HttpOnly cookie). Passwords are
+hashed with scrypt in SQLite. Duplicate usernames and failed logins
+show a visible error. Logged-out visitors cannot sit at a table. No
+email, OAuth, or social login.
+
 ## 2026-09-12 — App scaffold (features/001-app-scaffold.md)
 
 Local app shell: `npm run dev` starts a Vite page and a Node HTTP API.
