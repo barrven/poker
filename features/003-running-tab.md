@@ -1,7 +1,7 @@
 ---
 id: 003
 title: Running tab
-status: testing
+status: validating
 priority: high
 iteration: 1
 ---
@@ -38,7 +38,18 @@ Auth/scaffold tests updated for tab in `/api/me` and schema 3.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+`tests/tab.test.ts` via `npm test` (5 tab + 8 auth + 5 scaffold). All pass.
+
+Covered: register stores `users.tab = 1000`; logged-in `GET /api/me`
+returns that tab and the signed-in markup has `data-tab` /
+`formatChips(view.tab)`; a later `/api/me` with the same cookie returns
+a SQLite-updated tab (875), not a reset to 1000; UI/API have no
+deposit/withdraw/cash-out path; two accounts stay independent when one
+tab is changed.
+
+Deliberately not: a real browser reload (cookie reuse stands in);
+schema-2 `ALTER TABLE` of a hand-built old file; sit/leave/rebuy tab
+changes (004/011).
 
 ## Validation Notes
 
