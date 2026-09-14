@@ -1,7 +1,7 @@
 ---
 id: 003
 title: Running tab
-status: validating
+status: accept
 priority: high
 iteration: 1
 ---
@@ -15,14 +15,14 @@ turn it into real money.
 
 ## Acceptance Criteria
 
-- [ ] A newly registered account has a tab of 1,000 play-money chips,
+- [x] A newly registered account has a tab of 1,000 play-money chips,
       stored in SQLite.
-- [ ] While logged in, the player can see their current tab amount.
-- [ ] Reloading the app while logged in shows the same tab, not a reset
+- [x] While logged in, the player can see their current tab amount.
+- [x] Reloading the app while logged in shows the same tab, not a reset
       or a missing value.
-- [ ] There is no deposit, withdrawal, cash-out, or real-currency
+- [x] There is no deposit, withdrawal, cash-out, or real-currency
       conversion control.
-- [ ] Two different accounts have independent tabs.
+- [x] Two different accounts have independent tabs.
 
 ## Implementation Notes
 
@@ -53,7 +53,36 @@ changes (004/011).
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-14 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: **gap** — still no lint script or config.
+- typecheck: pass
+- build: pass (`dist/client` includes `data-tab` / `Tab:` / `play-money chips`)
+- tests: pass (`npm test` — 18/18)
+
+Existing :3001/:5173 were another process (this worktree has no
+pre-existing `data/`; that API's register returned `{username}` only).
+Validated this tree's API on :3010 and Vite on :5188 with users
+`val003a_1789416223627` / `val003b_1789416223627`.
+
+1. **Pass.** `POST /api/register` → 201
+   `{"username":"...","tab":1000}` + session cookie. SQLite
+   `users.tab` is INTEGER NOT NULL DEFAULT 1000; both new rows were
+   1000. `meta.schema_version` is 3.
+2. **Pass.** `GET /api/me` and `POST /api/login` return `tab: 1000`.
+   Vite-served `/src/main.ts` has
+   `<p data-tab>Tab: <strong>${escapeHtml(formatChips(view.tab))}</strong> play-money chips.</p>`.
+   Guest markup is register/login only (no tab amount).
+3. **Pass (no browser tool).** After `UPDATE users SET tab = 400` for
+   account A, the same cookie `GET /api/me` → `tab: 400` (not a reset
+   to 1000). Frontend `loadSession()` calls `/api/me` on load. A real
+   browser reload was not executed.
+4. **Pass.** Served `main.ts` and `server/app.ts` have no
+   deposit/withdraw/cash-out path. Signed-in UI is username, tab, and
+   log out.
+5. **Pass.** Account A tab 400 and account B tab 1000 in SQLite and in
+   each `/api/me`.
 
 ## Acceptance Log
 
