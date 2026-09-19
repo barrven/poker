@@ -1,7 +1,7 @@
 ---
 id: 003
 title: Running tab
-status: accept
+status: done
 priority: high
 iteration: 1
 ---
@@ -86,4 +86,6 @@ Validated this tree's API on :3010 and Vite on :5188 with users
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-19 — Accepted. User selected "Accept and continue" in response to
+the acceptance summary (all 5 acceptance criteria pass, project checks
+pass except the pre-existing lint gap). Moving on to 004-sit-table.

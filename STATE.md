@@ -4,9 +4,9 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 1
-- **Phase:** accept
-- **Active feature:** 003-running-tab
-- **Last updated:** 2026-09-14
+- **Phase:** implement
+- **Active feature:** 004-sit-table
+- **Last updated:** 2026-09-19
 
 ## Phases
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-19 — accepted 003-running-tab; active 004-sit-table; phase set to `implement`
 - 2026-09-14 — validated 003-running-tab; phase set to `accept`
 - 2026-09-14 — tested 003-running-tab; phase set to `validate`
 - 2026-09-14 — implemented 003-running-tab; phase set to `test`

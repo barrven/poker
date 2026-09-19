@@ -7,6 +7,14 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-19 — Running tab (features/003-running-tab.md)
+
+Every account has a play-money running tab stored in SQLite, starting
+at 1,000 chips on registration. Logged-in players can see their
+current tab, and it survives a page reload. Two accounts' tabs are
+independent. There is no deposit, withdrawal, cash-out, or
+real-currency conversion control.
+
 ## 2026-09-14 — Register, log in, and log out (features/002-auth.md)
 
 Players can register with a username and password, log in, and log out.
