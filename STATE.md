@@ -3,8 +3,8 @@
 This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
-- **Outer iteration:** 1
-- **Phase:** retro
+- **Outer iteration:** 2
+- **Phase:** spec
 - **Active feature:** _none — slice complete_
 - **Last updated:** 2026-09-19
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-19 — retro (iteration 1): spec revised (add lint requirement); more to build; outer iteration bumped to 2; phase set to `spec`
 - 2026-09-19 — accepted 004-sit-table; slice (001-004) complete; phase set to `retro`
 - 2026-09-19 — validated 004-sit-table; phase set to `accept`
 - 2026-09-19 — tested 004-sit-table; phase set to `validate`

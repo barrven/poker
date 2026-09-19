@@ -122,6 +122,9 @@ Explicitly out of scope, so `/features` doesn't invent work for it.
   required for v1.
 - Passwords hashed with a standard password hash (not reversible, not
   a single SHA).
+- Code is linted (ESLint, matching the TypeScript/Vite/Node stack) via an
+  `npm run lint` script that passes with no errors, alongside typecheck
+  and build.
 
 ## Open Questions
 
@@ -141,3 +144,7 @@ _Appended by `/retro` — what changed about the spec itself and why._
   tab and hand history; drop client-only/session-only persistence
 - 2026-09-12 — lock server default: Node HTTP API + local SQLite file
   beside the Vite app
+- 2026-09-19 — retro (iteration 1): add a lint requirement to Constraints
+  (`npm run lint`, ESLint) — every one of features 001-004's Validation
+  Notes flagged the missing lint script/config as a gap; making it an
+  explicit constraint so a future slice schedules setting it up
