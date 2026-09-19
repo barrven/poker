@@ -11,9 +11,11 @@
     "dev:web": "vite",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "build": "vite build && tsc -p tsconfig.server.json",
-    "test": "tsx --test tests/**/*.test.ts"
+    "test": "tsx --test tests/**/*.test.ts",
+    "lint": "biome lint --error-on-warnings ."
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
     "@types/node": "^22.20.2",
     "concurrently": "^10.0.5",
     "tsx": "^4.23.13",

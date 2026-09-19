@@ -178,9 +178,13 @@ async function handle(
       return;
     }
     const user = findUserByUsername(db, username);
-    const ok = user
-      ? verifyPassword(password, user.password_hash)
-      : (consumePasswordCheck(password), false);
+    let ok: boolean;
+    if (user) {
+      ok = verifyPassword(password, user.password_hash);
+    } else {
+      consumePasswordCheck(password);
+      ok = false;
+    }
     if (!ok || !user) {
       sendJson(res, 401, { error: "Invalid username or password" });
       return;

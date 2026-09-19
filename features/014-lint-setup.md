@@ -1,7 +1,7 @@
 ---
 id: 014
 title: Lint tooling
-status: backlog
+status: testing
 priority: high
 iteration: 2
 ---
@@ -30,7 +30,59 @@ Constraints added to `docs/SPEC.md` in the iteration-1 retro.
 
 ## Implementation Notes
 
-_Filled in during `/implement` — approach taken, files touched, tradeoffs._
+**Deviation from the spec's literal wording — flag for `/validate`, `/accept`,
+and the next `/retro`:** `docs/SPEC.md`'s Constraints section (added by the
+iteration-1 retro) names ESLint specifically. I used **Biome**
+(`@biomejs/biome`) instead. Reason: this project is on
+`typescript@7.0.2` (the new native/Go TypeScript compiler), and
+`typescript-eslint` (parser, plugin, and the `typescript-eslint` meta
+package alike) has a **hard, unconditional runtime guard** that throws
+`"typescript-eslint does not support TS 7.0."` the moment the package is
+imported — confirmed by installing it and running `npx eslint .`, which
+failed before evaluating any rule, even with a config that used no
+type-aware rules at all. This is a real upstream gap
+(github.com/typescript-eslint/typescript-eslint issue #10940), not a
+config mistake on this project's part. The only documented workaround
+(installing a second, shadow `typescript@6.x` purely for the linter to
+resolve) would itself violate this feature's own acceptance criterion of
+"no separate/parallel type-checking setup" — it would make the linter's
+view of the code diverge from what `npm run typecheck` actually checks.
+Biome ships its own Rust-based TS/JS parser and doesn't touch the
+`typescript` package's API at all, so it isn't coupled to this version
+skew (now or on a future TS bump). Recommend the spec wording change from
+"ESLint" to "a linter" at the next `/retro`; not changing `docs/SPEC.md`
+myself mid-`/implement`.
+
+`npm install --save-dev @biomejs/biome`, `npx biome init`, then trimmed
+the generated `biome.json`: formatter and the `assist`/organize-imports
+step are **disabled** (this feature is lint-only — enabling the
+formatter would reformat the whole existing 2-space codebase to Biome's
+tab-indent default, which is unrelated scope) and `files.includes` is
+scoped to `server/**`, `src/**`, `tests/**` (per the acceptance
+criteria), with `"preset": "recommended"` for the lint rule set.
+`package.json` gets `"lint": "biome lint --error-on-warnings ."` — plain
+`biome lint` exits 0 even when it reports warnings (the recommended
+preset's default severity), so `--error-on-warnings` is what actually
+makes AC4's "non-zero exit code" true; verified by temporarily dropping
+an unused-variable file into `server/` and confirming `npm run lint`
+exits non-zero, then removing it (not committed).
+
+Fixed the two real findings Biome surfaced on the existing codebase
+rather than suppressing them:
+- `server/app.ts`'s login handler used a comma-operator expression
+  (`: (consumePasswordCheck(password), false)`) for the timing-safe
+  dummy-hash-check-on-unknown-username path (`lint/complexity/noCommaOperator`).
+  Rewritten as an explicit `if`/`else` assigning to `let ok: boolean`;
+  behavior (the dummy scrypt call still runs on an unknown username, for
+  timing safety) is unchanged, `tests/auth.test.ts`'s
+  "login starts a session; failures are generic" test still passes.
+- `tests/table.test.ts`'s guest-markup regex had two literal spaces
+  before a backtick (`\n  ` `;`), flagged by
+  `lint/complexity/noAdjacentSpacesInRegex`. Changed to the equivalent
+  `\n {2}` `;` quantifier form (same match, clearer intent).
+
+Files: `biome.json` (new), `package.json` (+`lint` script, +`@biomejs/biome`
+devDependency), `package-lock.json`, `server/app.ts`, `tests/table.test.ts`.
 
 ## Test Notes
 

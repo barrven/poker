@@ -259,7 +259,7 @@ test("a logged-out visitor cannot sit, and the guest markup has no sit control",
 
   const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
   const guestMarkup = main.match(
-    /<form id="register-form">[\s\S]*?\n  `;/,
+    /<form id="register-form">[\s\S]*?\n {2}`;/,
   )?.[0];
   assert.ok(guestMarkup, "guest markup not found");
   assert.doesNotMatch(guestMarkup, /data-sit|id="sit"/);
