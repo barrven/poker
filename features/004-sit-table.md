@@ -1,7 +1,7 @@
 ---
 id: 004
 title: Sit down and leave the table
-status: accept
+status: done
 priority: high
 iteration: 1
 ---
@@ -158,4 +158,7 @@ was left untouched), with users `valalice` / `valbob`.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-19 — Accepted. User selected "Accept (slice complete → retro)" in
+response to the acceptance summary (all 8 acceptance criteria pass,
+project checks pass except the pre-existing lint gap). This was the last
+feature in iteration 1's slice (001–004); moving to `/retro`.

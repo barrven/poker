@@ -7,6 +7,15 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-19 — Sit down and leave the table (features/004-sit-table.md)
+
+A logged-in player can sit at a 6-max cash table with one click. Sitting
+buys in 200 chips from the tab onto the table (blinds 1/2 play-money),
+joined by five computer seats so the table is never short-handed.
+Leaving — or ending the session while seated — settles the table stack
+back to the tab. A tab under 200 can't sit down, and a logged-out
+visitor can't either. Cards and betting are not part of this feature.
+
 ## 2026-09-19 — Running tab (features/003-running-tab.md)
 
 Every account has a play-money running tab stored in SQLite, starting
