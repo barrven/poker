@@ -1,7 +1,7 @@
 ---
 id: 004
 title: Sit down and leave the table
-status: validating
+status: accept
 priority: high
 iteration: 1
 ---
@@ -16,21 +16,21 @@ feature is sit, stacks, and leave.
 
 ## Acceptance Criteria
 
-- [ ] A logged-in player with at least 200 on the tab can sit down
+- [x] A logged-in player with at least 200 on the tab can sit down
       without any configuration beyond that action.
-- [ ] Sitting deducts 200 from the tab and puts 200 on the human's
+- [x] Sitting deducts 200 from the tab and puts 200 on the human's
       table stack. SQLite reflects the new tab.
-- [ ] The table shows six seats: the human and five computer opponents,
+- [x] The table shows six seats: the human and five computer opponents,
       each computer seat with a 200-chip stack. Empty seats are not
       offered.
-- [ ] Blinds are shown as 1/2 play-money.
-- [ ] Leaving the table (or ending the session from the table) adds the
+- [x] Blinds are shown as 1/2 play-money.
+- [x] Leaving the table (or ending the session from the table) adds the
       human's current table stack back to the tab and clears the table
       stack. SQLite reflects the settled tab.
-- [ ] A player whose tab is below 200 cannot sit; they stay off the
+- [x] A player whose tab is below 200 cannot sit; they stay off the
       table and the tab is unchanged.
-- [ ] A logged-out visitor cannot sit.
-- [ ] Reloading while seated does not have to resume the table; the tab
+- [x] A logged-out visitor cannot sit.
+- [x] Reloading while seated does not have to resume the table; the tab
       must still match the last sit/leave settlement (an abandoned
       in-progress table may treat leave as a settlement of the last
       known stack).
@@ -113,7 +113,48 @@ table).
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-19 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: **gap** — still no lint script or config (pre-existing gap, noted
+  in 003 too; not introduced by this feature).
+- typecheck: pass
+- build: pass (`dist/client` built cleanly)
+- tests: pass (`npm test` — 26/26: 8 table + 7 auth + 5 tab + 6 scaffold)
+
+Validated a running instance of this tree on an isolated port (`:3011`)
+against a scratch SQLite file (this worktree's own `data/poker.sqlite`
+belongs to another already-running `npm run dev` on `:3001`/`:5173` and
+was left untouched), with users `valalice` / `valbob`.
+
+1. **Pass.** `POST /api/sit` for `valalice` (tab 1000, no config beyond
+   the call) → 200 `{"tab":800,"seated":true,"stack":200}`.
+2. **Pass.** Same call: tab deducted 1000 → 800, stack 200. SQLite
+   `users.tab` for `valalice` read back as `800` directly.
+3. **Pass (by inspection — no jsdom in this project).**
+   `renderTable()` in `src/main.ts` renders one static
+   `data-seat="you"` seat plus `Array.from({ length: COMPUTER_SEATS }, ...)`
+   with `COMPUTER_SEATS = 5`, each computer seat labelled
+   `Computer ${i+1}` at `formatChips(BUY_IN)` (200) chips — six seats
+   total, no seat left unfilled/offered as empty. Covered mechanically by
+   `tests/table.test.ts`'s seat-count test.
+4. **Pass.** `renderTable()` includes `Blinds: 1/2 play-money.`.
+5. **Pass.** `POST /api/leave` for `valalice` → 200
+   `{"tab":1000,"seated":false,"stack":0}`; SQLite tab back to 1000. A
+   second `/api/leave` → 400 (not seated). Separately, sitting `valbob`
+   then `POST /api/logout` (ending the session from the table) also
+   settled SQLite tab 800 → 1000.
+6. **Pass.** `valbob`'s tab set to 150 directly in SQLite; `POST /api/sit`
+   → 400 `"Not enough chips on your tab to sit down."`; SQLite tab still
+   150 afterward (unchanged).
+7. **Pass.** `POST /api/sit` with no session cookie → 401
+   `"Authentication required"`.
+8. **Pass.** After sitting `valalice` (tab 800), two consecutive
+   `GET /api/me` calls (standing in for a reload) both returned `tab:800,
+   seated:true` — consistent, no reset. `POST /api/leave` afterward still
+   settled correctly to 1000, matching "the tab must still match the last
+   sit/leave settlement" even though this implementation happens to keep
+   the table resumed in memory rather than needing to.
 
 ## Acceptance Log
 
