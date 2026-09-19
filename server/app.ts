@@ -14,6 +14,7 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { pingDb } from "./db.js";
+import { leaveTable, sitDown, tableStateFor } from "./table.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const MAX_BODY = 8192;
@@ -90,11 +91,19 @@ function currentUser(
   return userForToken(db, token);
 }
 
-function userPayload(user: { username: string; tab: number }): {
+function userPayload(user: { id: number; username: string; tab: number }): {
   username: string;
   tab: number;
+  seated: boolean;
+  stack: number;
 } {
-  return { username: user.username, tab: user.tab };
+  const table = tableStateFor(user.id);
+  return {
+    username: user.username,
+    tab: user.tab,
+    seated: table.seated,
+    stack: table.seated ? table.stack : 0,
+  };
 }
 
 export function createApp(db: DatabaseSync): http.Server {
@@ -186,6 +195,10 @@ async function handle(
   if (method === "POST" && pathOnly === "/api/logout") {
     const token = sessionTokenFromRequest(req.headers.cookie);
     if (token) {
+      const user = userForToken(db, token);
+      if (user) {
+        leaveTable(db, user.id);
+      }
       deleteSession(db, token);
     }
     sendJson(res, 200, { ok: true }, { "Set-Cookie": clearSessionCookieHeader() });
@@ -208,7 +221,31 @@ async function handle(
       sendJson(res, 401, { error: "Authentication required" });
       return;
     }
-    sendJson(res, 404, { error: "not found" });
+    const result = sitDown(db, user.id);
+    if (!result.ok) {
+      if (result.reason === "already-seated") {
+        sendJson(res, 409, { error: "Already seated." });
+        return;
+      }
+      sendJson(res, 400, { error: "Not enough chips on your tab to sit down." });
+      return;
+    }
+    sendJson(res, 200, userPayload({ ...user, tab: result.tab }));
+    return;
+  }
+
+  if (method === "POST" && pathOnly === "/api/leave") {
+    const user = currentUser(db, req);
+    if (!user) {
+      sendJson(res, 401, { error: "Authentication required" });
+      return;
+    }
+    const result = leaveTable(db, user.id);
+    if (!result.ok) {
+      sendJson(res, 400, { error: "Not seated at the table." });
+      return;
+    }
+    sendJson(res, 200, userPayload({ ...user, tab: result.tab }));
     return;
   }
 

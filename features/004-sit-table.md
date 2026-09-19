@@ -1,7 +1,7 @@
 ---
 id: 004
 title: Sit down and leave the table
-status: backlog
+status: testing
 priority: high
 iteration: 1
 ---
@@ -37,7 +37,40 @@ feature is sit, stacks, and leave.
 
 ## Implementation Notes
 
-_Filled in during `/implement` — approach taken, files touched, tradeoffs._
+New `server/table.ts`: in-memory `Map<userId, stack>` for seating (no cards
+or betting yet, and a reload does not have to resume the table per the
+acceptance criteria, so this does not need SQLite persistence the way
+`users.tab` does). `BUY_IN = 200`, blinds 1/2, `COMPUTER_SEATS = 5`.
+`sitDown()`/`leaveTable()` read/write `users.tab` directly and guard
+already-seated / insufficient-tab / not-seated.
+
+`POST /api/sit` (200 on success, 400 insufficient tab, 409 already seated,
+401 logged out) and `POST /api/leave` (200, 400 not seated, 401 logged
+out) added to `server/app.ts`, replacing the `/api/sit` 404 stub.
+`/api/logout` now settles (`leaveTable`) before deleting the session, so
+"ending the session from the table" also returns the stack to the tab.
+`userPayload()` (used by register/login/me/sit/leave) now returns
+`{ username, tab, seated, stack }`.
+
+`src/main.ts`: signed-in view renders either a "Sit down (200 chips)"
+button (`#sit`/`data-sit`, disabled-by-omission with an error message
+instead of a control when `tab < 200`) or the seated table — 1 human +
+5 computer seats each at 200 chips, "Blinds: 1/2 play-money.", and a
+`#leave` button. Wrapper div is `data-seated-table` (not `data-table`,
+which would collide with tab.test.ts's `/data-tab/` substring check).
+
+Assumption: since bots hold no real money in this feature, their 200-chip
+seats are static display, not per-user state — only the human's seat/stack
+is tracked. Table state is in-memory per server process, keyed by user id;
+it happens to survive an in-process reload (stronger than the acceptance
+criteria requires, which only demands the tab reflect the settlement).
+
+Files: `server/table.ts` (new), `server/app.ts`, `src/main.ts`.
+
+Known follow-up for `/test`: `tests/auth.test.ts`'s `deepEqual` checks on
+register/login/me bodies and its "logged-out visitor cannot sit" guard
+(`doesNotMatch` on any sit button/text) predate this feature and need
+updating, same pattern as 003's tab-field update to those tests.
 
 ## Test Notes
 
