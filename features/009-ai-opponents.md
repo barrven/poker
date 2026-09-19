@@ -1,9 +1,9 @@
 ---
 id: 009
 title: Computer opponents
-status: deferred
+status: backlog
 priority: medium
-iteration: later
+iteration: 2
 ---
 
 ## Description

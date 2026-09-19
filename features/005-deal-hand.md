@@ -1,9 +1,9 @@
 ---
 id: 005
 title: Deal a Hold'em hand
-status: deferred
+status: backlog
 priority: high
-iteration: later
+iteration: 2
 ---
 
 ## Description

@@ -1,9 +1,9 @@
 ---
 id: 007
 title: Showdown, pots, and hand ranking
-status: deferred
+status: backlog
 priority: high
-iteration: later
+iteration: 2
 ---
 
 ## Description

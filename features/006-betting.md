@@ -1,9 +1,9 @@
 ---
 id: 006
 title: Betting rounds and legal actions
-status: deferred
+status: backlog
 priority: high
-iteration: later
+iteration: 2
 ---
 
 ## Description
