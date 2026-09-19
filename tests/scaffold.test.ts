@@ -36,7 +36,7 @@ test("openDb creates a local SQLite file and can query it", () => {
     const row = db
       .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
       .get() as { value: string } | undefined;
-    assert.equal(row?.value, "2");
+    assert.equal(row?.value, "3");
   } finally {
     db.close();
   }

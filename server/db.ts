@@ -4,7 +4,8 @@ import { DatabaseSync } from "node:sqlite";
 
 export const defaultDataDir = path.resolve(process.cwd(), "data");
 export const sqliteFileName = "poker.sqlite";
-export const schemaVersion = "2";
+export const schemaVersion = "3";
+export const STARTING_TAB = 1000;
 
 export function sqlitePath(dataDir = defaultDataDir): string {
   return path.join(dataDir, sqliteFileName);
@@ -23,6 +24,7 @@ export function openDb(dataDir = defaultDataDir): DatabaseSync {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      tab INTEGER NOT NULL DEFAULT ${STARTING_TAB},
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS sessions (
@@ -31,10 +33,21 @@ export function openDb(dataDir = defaultDataDir): DatabaseSync {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+  ensureUsersTabColumn(db);
   db.prepare(
     "INSERT INTO meta (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
   ).run(schemaVersion);
   return db;
+}
+
+function ensureUsersTabColumn(db: DatabaseSync): void {
+  const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+  if (cols.some((col) => col.name === "tab")) {
+    return;
+  }
+  db.exec(
+    `ALTER TABLE users ADD COLUMN tab INTEGER NOT NULL DEFAULT ${STARTING_TAB}`,
+  );
 }
 
 export function pingDb(db: DatabaseSync): boolean {

@@ -1,5 +1,6 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
+import { STARTING_TAB } from "./db.js";
 
 export const SESSION_COOKIE = "poker_session";
 
@@ -9,7 +10,7 @@ const SCRYPT_P = 1;
 const HASH_LEN = 32;
 const DUMMY_HASH = hashPassword("timing-dummy");
 
-export type UserRow = { id: number; username: string };
+export type UserRow = { id: number; username: string; tab: number };
 
 export function hashPassword(password: string): string {
   const salt = randomBytes(16);
@@ -97,22 +98,28 @@ export function createUser(
 ): UserRow {
   const passwordHash = hashPassword(password);
   const result = db
-    .prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)")
-    .run(username, passwordHash);
-  return { id: Number(result.lastInsertRowid), username };
+    .prepare(
+      "INSERT INTO users (username, password_hash, tab) VALUES (?, ?, ?)",
+    )
+    .run(username, passwordHash, STARTING_TAB);
+  return { id: Number(result.lastInsertRowid), username, tab: STARTING_TAB };
 }
 
 export function findUserByUsername(
   db: DatabaseSync,
   username: string,
-): { id: number; username: string; password_hash: string } | undefined {
-  return db
+): { id: number; username: string; password_hash: string; tab: number } | undefined {
+  const row = db
     .prepare(
-      "SELECT id, username, password_hash FROM users WHERE username = ?",
+      "SELECT id, username, password_hash, tab FROM users WHERE username = ?",
     )
     .get(username) as
-    | { id: number; username: string; password_hash: string }
+    | { id: number; username: string; password_hash: string; tab: number }
     | undefined;
+  if (!row) {
+    return undefined;
+  }
+  return { ...row, tab: Number(row.tab) };
 }
 
 export function createSession(db: DatabaseSync, userId: number): string {
@@ -135,14 +142,18 @@ export function userForToken(
   if (!token) {
     return undefined;
   }
-  return db
+  const row = db
     .prepare(
-      `SELECT users.id AS id, users.username AS username
+      `SELECT users.id AS id, users.username AS username, users.tab AS tab
        FROM sessions
        JOIN users ON users.id = sessions.user_id
        WHERE sessions.token = ?`,
     )
     .get(token) as UserRow | undefined;
+  if (!row) {
+    return undefined;
+  }
+  return { ...row, tab: Number(row.tab) };
 }
 
 export function sessionTokenFromRequest(

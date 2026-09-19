@@ -90,6 +90,13 @@ function currentUser(
   return userForToken(db, token);
 }
 
+function userPayload(user: { username: string; tab: number }): {
+  username: string;
+  tab: number;
+} {
+  return { username: user.username, tab: user.tab };
+}
+
 export function createApp(db: DatabaseSync): http.Server {
   return http.createServer((req, res) => {
     void handle(db, req, res).catch(() => {
@@ -133,7 +140,7 @@ async function handle(
       sendJson(
         res,
         201,
-        { username: user.username },
+        userPayload(user),
         { "Set-Cookie": sessionCookieHeader(token) },
       );
     } catch (error) {
@@ -170,7 +177,7 @@ async function handle(
     sendJson(
       res,
       200,
-      { username: user.username },
+      userPayload(user),
       { "Set-Cookie": sessionCookieHeader(token) },
     );
     return;
@@ -191,7 +198,7 @@ async function handle(
       sendJson(res, 401, { error: "Not logged in" });
       return;
     }
-    sendJson(res, 200, { username: user.username });
+    sendJson(res, 200, userPayload(user));
     return;
   }
 
