@@ -31,7 +31,7 @@ stops at a human gate.
 | `features/BACKLOG.md` | Index of every feature. |
 | `features/NNN-slug.md` | One file per feature (copy `features/template.md`). |
 | `.claude/commands/` | The stage procedures the agent follows. |
-| `.claude/GIT.md` | Git policy. Daily work is `dev`; `master` is the last accepted product. |
+| `.claude/GIT.md` | Git policy. `/spec`/`/features` commit to `master`; the inner loop commits to `dev`; `/accept` merges `dev` into `master`. |
 
 `STATE.md` **Phase** is one of: `spec`, `features`, `implement`, `test`,
 `validate`, `accept`, `retro`.
@@ -227,5 +227,8 @@ A feature is in the current slice when its `iteration` equals `STATE.md`'s
    another slice.
 6. Repeat from `/spec` or `/features` as retro directed, or stop.
 
-Git: every stage commits and pushes `dev`. `master` updates only on an
-accepted feature and on retro. Policy is `.claude/GIT.md`.
+Git: `/spec` and `/features` commit and push straight to `master`. The inner
+loop (`/implement` → `/test` → `/validate`) commits and pushes `dev` on its
+own, no human input needed — `/accept` is the loop's one human gate, and
+merges `dev` into `master` once the user actually accepts. Policy is
+`.claude/GIT.md`.

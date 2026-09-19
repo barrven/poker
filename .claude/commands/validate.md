@@ -4,7 +4,9 @@ description: "Dev-loop inner stage 3: validate the active feature against its ac
 
 You are running the **validate** stage of the dev loop's inner cycle. This is
 a check, not more building — you're confirming, skeptically, that stage 1-2
-actually delivered.
+actually delivered. This cycle runs without stopping for human input —
+`/accept` is the only human gate in it; branch on the result yourself rather
+than asking.
 
 1. Read `STATE.md` for the active feature and its feature file.
 2. Run whatever the project has: lint, typecheck, build, full test suite (not

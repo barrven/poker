@@ -3,14 +3,17 @@
 Read this at every stage. Stage commands do not restate it.
 
 Never push to a remote whose URL contains `scaffold-template`. Never force-push.
-Never commit directly on `master`. Stay on `dev` when a stage finishes.
+Never commit directly on `master` **except** from the outer-loop stages below,
+which own `master` directly. Everything else stays off `master` until a merge.
 
 ## Branches
 
-- **`dev`** — daily branch. Every stage commit lands here. Push `dev` after each commit.
-- **`master`** — last accepted product. Update it only by merging `dev` into `master`.
-  Merge on `/accept` when the user accepted the feature, and on `/retro` after that
-  stage's commit (so a slice close or a finished project is not stuck on `dev`).
+- **`master`** — outer-loop home branch, and the last accepted product.
+  `/spec` and `/features` commit and push directly here.
+- **`dev`** — inner-loop working branch. `/implement`, `/test`, and
+  `/validate` each commit and push here on their own, with no human input
+  required. `/accept` — the inner loop's one human gate — commits/pushes
+  `dev` too, then merges it into `master` once the user actually accepts.
 
 ## New product repo
 
@@ -49,45 +52,75 @@ basename of the working directory
 3. `git init -b master`
 4. `git add` the scaffold files (this tree as it stands, before spec edits).
    Commit: `Initial commit from scaffold.`
-5. `git checkout -b dev` — stay here.
+5. `git checkout -b dev` then `git checkout master` — create the inner-loop
+   branch now so it exists, but land back on `master`: this same `/spec` run
+   commits its spec edit next, and outer-loop stages commit to `master`
+   directly.
 6. If they want a GitHub repo and `gh` works:
    `gh repo create <name> --private --source=. --remote=origin --push`
-   then `git push -u origin dev` (create was on `master`; `dev` needs its
-   own upstream). If they asked for public, use `--public`.
+   (this pushes `master`) then `git push -u origin dev` (give `dev` its own
+   upstream). If they asked for public, use `--public`.
 7. If they skipped GitHub, continue local-only. Later stages skip `git push`
    and say so once, not on every stage.
 
 If `git commit` fails on missing `user.name` / `user.email`, stop and ask
 rather than inventing an identity.
 
-## Every stage (on `dev`)
+## Outer loop (`/spec`, `/features`) — on `master`
 
-After the stage's file updates:
-
-1. `git status` and `git diff`. If clean, skip commit.
-2. Stage **this stage's changes**, not blindly `git add -A`. Once an app
+1. Make sure you're on `master` (`git checkout master`). If `dev` is ahead
+   or behind, that's fine — it gets refreshed from `master` when the inner
+   loop next starts.
+2. `git status` and `git diff`. If clean, skip commit.
+3. Stage **this stage's changes**, not blindly `git add -A`. Once an app
    exists, never add `node_modules/`, build output, secrets, or anything a
-   `.gitignore` should exclude. If there is no `.gitignore` yet and junk is
-   present, add only the paths you changed.
-3. Commit with an imperative one-liner. Inner-loop stages include the
-   feature id and title.
+   `.gitignore` should exclude.
+4. Commit with an imperative one-liner:
    - spec: `Write the product spec.` / `Revise the product spec.`
    - features: `Schedule iteration N feature slice.`
+5. If `origin` exists: `git push origin master`. If push fails, report it
+   and continue the loop — do not rewrite history to "fix" the push.
+6. When `/features` finishes scheduling a slice and hands off to
+   `/implement`: refresh `dev` from `master` so the inner loop starts from
+   the latest code — `git checkout dev && git merge --ff-only master`
+   (or `git checkout -b dev master` if `dev` doesn't exist locally yet).
+
+## Inner loop (`/implement`, `/test`, `/validate`) — on `dev`
+
+This cycle runs without stopping for human input — `/accept` is the only
+human gate. Each stage below commits and pushes on its own.
+
+1. Confirm you're on `dev` (create/refresh it from `master` per the outer
+   loop's step 6 above if you haven't yet for this slice).
+2. `git status` and `git diff`. If clean, skip commit.
+3. Stage **this stage's changes**, not blindly `git add -A`. Once an app
+   exists, never add `node_modules/`, build output, secrets, or anything a
+   `.gitignore` should exclude.
+4. Commit with an imperative one-liner, including the feature id and title:
    - implement: `Implement NNN: <title>.`
    - test: `Test NNN: <title>.`
    - validate: `Validate NNN: <title>.`
-   - accept: `Accept NNN: <title>.` (or `Request changes on NNN: <title>.` /
-     `Reject NNN: <title>.`)
-   - retro: `Retro iteration N.`
-4. If `origin` exists: `git push origin dev`. If push fails, report it and
+5. If `origin` exists: `git push origin dev`. If push fails, report it and
    continue the loop — do not rewrite history to "fix" the push.
-5. `/accept` when the user **accepted** (any accept path), and `/retro`
-   after a successful commit: merge to `master` (next section). Request
-   changes, reject, and validate-failed bounces stay on `dev` only.
+
+## `/accept` — the inner loop's one human gate
+
+1. Commit and push `dev` per the inner-loop steps above, with message
+   `Accept NNN: <title>.` (or `Request changes on NNN: <title>.` /
+   `Reject NNN: <title>.`, depending on the user's decision).
+2. If the user actually accepted (continue the slice, or retro now): merge
+   `dev` → `master` and push (below). Request-changes and reject stay on
+   `dev` only — do not merge.
+
+## `/retro`
+
+Commit and push `dev` per the inner-loop steps above (message:
+`Retro iteration N.`), then merge `dev` → `master` and push (below) — a
+slice close or a finished project should not be left stuck on `dev`.
 
 ## Merge `dev` → `master`
 
-Only after the `dev` commit and push above.
+Only after the relevant `dev` commit and push above.
 
 1. `git checkout master`
 2. `git merge --ff-only dev` — if that fails, `git merge --no-ff dev` with

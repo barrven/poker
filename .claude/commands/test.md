@@ -2,7 +2,9 @@
 description: "Dev-loop inner stage 2: write and run tests for the active feature"
 ---
 
-You are running the **test** stage of the dev loop's inner cycle.
+You are running the **test** stage of the dev loop's inner cycle. This cycle
+runs without stopping for human input — `/accept` is the only human gate in
+it, so iterate on your own until tests pass rather than asking.
 
 1. Read `STATE.md` for the active feature and its feature file.
 2. Write or extend tests that exercise the feature's Acceptance Criteria —
