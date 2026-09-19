@@ -1,7 +1,7 @@
 ---
 id: 014
 title: Lint tooling
-status: testing
+status: validating
 priority: high
 iteration: 2
 ---
@@ -86,7 +86,31 @@ devDependency), `package-lock.json`, `server/app.ts`, `tests/table.test.ts`.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+`tests/lint.test.ts` (new, 4 tests) via `npm test` (30/30 total: 4 lint +
+8 table + 7 auth + 5 tab + 6 scaffold).
+
+Covered: `package.json`'s `lint` script exists and is
+`biome lint --error-on-warnings .`; `biome.json` has linting enabled,
+scopes `files.includes` to `server/**`/`src/**`/`tests/**`, and has the
+formatter disabled (lint-only, no parallel type-checking or reformat
+surface); `npm run lint` actually executes and reports no errors against
+the current codebase (real subprocess run via `execFileSync`, not just a
+config-shape check); a deliberately bad file (unused variable) in an
+isolated tmp dir, linted with the project's own `node_modules/.bin/biome`
+binary and `--error-on-warnings`, exits non-zero — proving AC4 mechanically
+rather than by the manual check recorded in Implementation Notes.
+
+Deliberately not: re-testing that Biome's `recommended` preset rules are
+individually correct (that's Biome's own test suite's job, not this
+project's); linting non-TS/JS files (markdown, JSON) — out of this
+feature's scope; a fix-mode (`biome lint --write`) test, since the AC only
+requires a real pass/fail check, not auto-fixing.
+
+Note for `/validate`: the isolated bad-file test invokes the local biome
+binary directly (`node_modules/.bin/biome`), not `npx`, specifically to
+avoid `npx` resolving/downloading a package from a directory outside this
+project (the test's tmp dir is under the OS tmp root, not nested in
+`node_modules`).
 
 ## Validation Notes
 
