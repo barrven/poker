@@ -9,11 +9,23 @@ export type TableState = { seated: true; stack: number } | { seated: false };
 
 // In-memory only: no cards or betting yet, and a reload does not have to
 // resume the table (feature 004's acceptance criteria), so this does not
-// need to survive a server restart the way `users.tab` does.
-const seated = new Map<number, number>();
+// need to survive a server restart the way `users.tab` does. Scoped by db
+// instance (not a single module-level map) so two independent `DatabaseSync`
+// instances in the same process — e.g. separate test runs — never share
+// seating state just because they happen to assign the same user id.
+const seatsByDb = new WeakMap<DatabaseSync, Map<number, number>>();
 
-export function tableStateFor(userId: number): TableState {
-  const stack = seated.get(userId);
+function seatsFor(db: DatabaseSync): Map<number, number> {
+  let seats = seatsByDb.get(db);
+  if (!seats) {
+    seats = new Map();
+    seatsByDb.set(db, seats);
+  }
+  return seats;
+}
+
+export function tableStateFor(db: DatabaseSync, userId: number): TableState {
+  const stack = seatsFor(db).get(userId);
   return stack === undefined ? { seated: false } : { seated: true, stack };
 }
 
@@ -36,7 +48,8 @@ export type SitResult =
   | { ok: false; reason: "insufficient" | "already-seated" };
 
 export function sitDown(db: DatabaseSync, userId: number): SitResult {
-  if (seated.has(userId)) {
+  const seats = seatsFor(db);
+  if (seats.has(userId)) {
     return { ok: false, reason: "already-seated" };
   }
   const tab = tabOf(db, userId);
@@ -45,7 +58,7 @@ export function sitDown(db: DatabaseSync, userId: number): SitResult {
   }
   const newTab = tab - BUY_IN;
   setTab(db, userId, newTab);
-  seated.set(userId, BUY_IN);
+  seats.set(userId, BUY_IN);
   return { ok: true, tab: newTab, stack: BUY_IN };
 }
 
@@ -54,16 +67,13 @@ export type LeaveResult =
   | { ok: false; reason: "not-seated" };
 
 export function leaveTable(db: DatabaseSync, userId: number): LeaveResult {
-  const stack = seated.get(userId);
+  const seats = seatsFor(db);
+  const stack = seats.get(userId);
   if (stack === undefined) {
     return { ok: false, reason: "not-seated" };
   }
   const newTab = tabOf(db, userId) + stack;
   setTab(db, userId, newTab);
-  seated.delete(userId);
+  seats.delete(userId);
   return { ok: true, tab: newTab };
-}
-
-export function clearSeatFor(userId: number): void {
-  seated.delete(userId);
 }

@@ -91,13 +91,16 @@ function currentUser(
   return userForToken(db, token);
 }
 
-function userPayload(user: { id: number; username: string; tab: number }): {
+function userPayload(
+  db: DatabaseSync,
+  user: { id: number; username: string; tab: number },
+): {
   username: string;
   tab: number;
   seated: boolean;
   stack: number;
 } {
-  const table = tableStateFor(user.id);
+  const table = tableStateFor(db, user.id);
   return {
     username: user.username,
     tab: user.tab,
@@ -149,7 +152,7 @@ async function handle(
       sendJson(
         res,
         201,
-        userPayload(user),
+        userPayload(db, user),
         { "Set-Cookie": sessionCookieHeader(token) },
       );
     } catch (error) {
@@ -186,7 +189,7 @@ async function handle(
     sendJson(
       res,
       200,
-      userPayload(user),
+      userPayload(db, user),
       { "Set-Cookie": sessionCookieHeader(token) },
     );
     return;
@@ -211,7 +214,7 @@ async function handle(
       sendJson(res, 401, { error: "Not logged in" });
       return;
     }
-    sendJson(res, 200, userPayload(user));
+    sendJson(res, 200, userPayload(db, user));
     return;
   }
 
@@ -230,7 +233,7 @@ async function handle(
       sendJson(res, 400, { error: "Not enough chips on your tab to sit down." });
       return;
     }
-    sendJson(res, 200, userPayload({ ...user, tab: result.tab }));
+    sendJson(res, 200, userPayload(db, { ...user, tab: result.tab }));
     return;
   }
 
@@ -245,7 +248,7 @@ async function handle(
       sendJson(res, 400, { error: "Not seated at the table." });
       return;
     }
-    sendJson(res, 200, userPayload({ ...user, tab: result.tab }));
+    sendJson(res, 200, userPayload(db, { ...user, tab: result.tab }));
     return;
   }
 

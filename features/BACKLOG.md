@@ -10,7 +10,7 @@
 | 001 | App scaffold | done | high | 1 | [001-app-scaffold.md](001-app-scaffold.md) |
 | 002 | Register, log in, and log out | done | high | 1 | [002-auth.md](002-auth.md) |
 | 003 | Running tab | done | high | 1 | [003-running-tab.md](003-running-tab.md) |
-| 004 | Sit down and leave the table | testing | high | 1 | [004-sit-table.md](004-sit-table.md) |
+| 004 | Sit down and leave the table | validating | high | 1 | [004-sit-table.md](004-sit-table.md) |
 | 005 | Deal a Hold'em hand | deferred | high | later | [005-deal-hand.md](005-deal-hand.md) |
 | 006 | Betting rounds and legal actions | deferred | high | later | [006-betting.md](006-betting.md) |
 | 007 | Showdown, pots, and hand ranking | deferred | high | later | [007-showdown-pots.md](007-showdown-pots.md) |

@@ -1,7 +1,7 @@
 ---
 id: 004
 title: Sit down and leave the table
-status: testing
+status: validating
 priority: high
 iteration: 1
 ---
@@ -61,9 +61,12 @@ which would collide with tab.test.ts's `/data-tab/` substring check).
 
 Assumption: since bots hold no real money in this feature, their 200-chip
 seats are static display, not per-user state — only the human's seat/stack
-is tracked. Table state is in-memory per server process, keyed by user id;
-it happens to survive an in-process reload (stronger than the acceptance
-criteria requires, which only demands the tab reflect the settlement).
+is tracked. Table state is in-memory, scoped to the `DatabaseSync` instance
+via a `WeakMap<DatabaseSync, Map<userId, stack>>` (not a bare module-level
+map — two independent db instances in one process, e.g. concurrent test
+runs, must not share seating just because a user id repeats). It happens to
+survive an in-process reload (stronger than the acceptance criteria
+requires, which only demands the tab reflect the settlement).
 
 Files: `server/table.ts` (new), `server/app.ts`, `src/main.ts`.
 
@@ -74,7 +77,39 @@ updating, same pattern as 003's tab-field update to those tests.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+`tests/table.test.ts` (new, 8 tests) via `npm test` (26/26 total: 8 table +
+7 auth + 5 tab + 6 scaffold).
+
+Covered: sitting with >=200 tab returns `seated:true, stack:200`; tab
+deducted to 800 and SQLite reflects it; `renderTable`'s source shows one
+static human seat, a loop over `COMPUTER_SEATS` (=5) computer seats each
+at `BUY_IN` chips, and "Blinds: 1/2"; leaving returns the stack to the tab
+(1000) and clears it in SQLite, and a second leave 400s (not seated);
+logging out while seated also settles the tab in SQLite; a tab below 200
+gets a 400 and leaves SQLite unchanged; a logged-out `/api/sit` 401s and
+the guest markup source has no `data-sit`/`id="sit"`; two `/api/me` calls
+after sitting return the same tab (800) as a reload would, and leave still
+settles correctly afterward.
+
+Updated `tests/auth.test.ts`'s `deepEqual` body checks (register/login/me)
+to include `seated: false, stack: 0`, and trimmed its "logged-out visitor
+cannot sit" test to the 401/auth check — the UI-detail assertions it used
+to make (no sit button/text anywhere in `main.ts`) predated this feature
+and are superseded by `table.test.ts`'s scoped guest-markup check.
+
+Bug found and fixed during this stage: `server/table.ts`'s seat map was
+originally a single module-level `Map<userId, stack>`, which leaked state
+across independent `DatabaseSync` instances that happen to assign the same
+autoincrement user id (surfaced as spurious "already seated" / wrong-tab
+failures once `table.test.ts`'s several fresh-db tests ran in the same
+process). Fixed by scoping the map per `DatabaseSync` via `WeakMap`.
+
+Deliberately not: a real browser reload or DOM assertions (this project
+has no jsdom; frontend checks are source-text regexes, consistent with
+002/003); multiple concurrent computer-seat interactions (no betting yet,
+bot stacks are static 200 display only); server-restart persistence of
+seating (acceptance criteria explicitly allows a reload to not resume the
+table).
 
 ## Validation Notes
 

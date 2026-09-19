@@ -93,14 +93,24 @@ test("register creates an account and a session", async () => {
       body: JSON.stringify({ username: "alice", password: "secret" }),
     });
     assert.equal(registered.status, 201);
-    assert.deepEqual(registered.body, { username: "alice", tab: 1000 });
+    assert.deepEqual(registered.body, {
+      username: "alice",
+      tab: 1000,
+      seated: false,
+      stack: 0,
+    });
     assert.ok(registered.cookie);
 
     const me = await json(app.base, "/api/me", {
       headers: { cookie: registered.cookie },
     });
     assert.equal(me.status, 200);
-    assert.deepEqual(me.body, { username: "alice", tab: 1000 });
+    assert.deepEqual(me.body, {
+      username: "alice",
+      tab: 1000,
+      seated: false,
+      stack: 0,
+    });
   } finally {
     await app.close();
   }
@@ -178,13 +188,23 @@ test("login starts a session; failures are generic", async () => {
       body: JSON.stringify({ username: "alice", password: "secret" }),
     });
     assert.equal(ok.status, 200);
-    assert.deepEqual(ok.body, { username: "alice", tab: 1000 });
+    assert.deepEqual(ok.body, {
+      username: "alice",
+      tab: 1000,
+      seated: false,
+      stack: 0,
+    });
     assert.ok(ok.cookie);
     const me = await json(app.base, "/api/me", {
       headers: { cookie: ok.cookie },
     });
     assert.equal(me.status, 200);
-    assert.deepEqual(me.body, { username: "alice", tab: 1000 });
+    assert.deepEqual(me.body, {
+      username: "alice",
+      tab: 1000,
+      seated: false,
+      stack: 0,
+    });
   } finally {
     await app.close();
   }
@@ -229,7 +249,12 @@ test("session cookie still authenticates after a later request (refresh)", async
     });
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
-    assert.deepEqual(second.body, { username: "alice", tab: 1000 });
+    assert.deepEqual(second.body, {
+      username: "alice",
+      tab: 1000,
+      seated: false,
+      stack: 0,
+    });
   } finally {
     await app.close();
   }
@@ -251,8 +276,6 @@ test("logged-out visitor cannot sit", async () => {
   const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
   assert.match(main, /id="register-form"/);
   assert.match(main, /id="login-form"/);
-  assert.doesNotMatch(main, /<button[^>]*(id="sit"|data-sit)/i);
-  assert.doesNotMatch(main, />Sit(\s+down)?</i);
 });
 
 test("no email, OAuth, or social-login path", () => {
