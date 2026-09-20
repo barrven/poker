@@ -1,7 +1,7 @@
 ---
 id: 018
 title: Responsive app-shell dashboard
-status: testing
+status: validating
 priority: medium
 iteration: 5
 ---
@@ -97,6 +97,54 @@ from feature 016 without any layout conflict.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
+
+New file `tests/dashboard-shell.test.ts` (11 tests, source-regex + live
+API, same convention as the rest of `tests/`):
+
+- `renderTopMenu` exists with `data-topbar`, `data-profile` (showing
+  the username), `id="settings"` (`disabled`), and `id="logout"`, and
+  is called unconditionally from the whole signed-in render branch —
+  not just one sub-state (AC1).
+- Logout's handler is exactly the pre-existing `onLogout` (still calls
+  `/api/logout`) — just wired to the relocated button (AC2).
+- Settings is `disabled` and has no click handler anywhere in the file
+  — a real placeholder, not fake interactivity.
+- `renderDashboard` calls `renderSitControl` (AC4), has `id="topup"`
+  (AC5), and calls `renderHistory` directly — explicitly *not*
+  `renderHistoryToggle` (AC3) — while `render()`'s seated branch still
+  builds `seatedHistorySection` from the toggle, confirming the
+  pre-existing toggle behavior survives unchanged for the table/hand
+  view.
+- `loadDashboardHistory` exists, calls `fetchHandHistory`, and bails if
+  the view is no longer the dashboard by the time it resolves (race
+  guard); `render()` triggers it exactly when
+  `!view.seated && view.history === undefined`.
+- The dashboard's `#topup` reuses the exact same handler/endpoint as
+  the pre-existing felted-recovery control, not a new one.
+- `.card-img`-style CSS check adapted for this feature:
+  `[data-topbar]`/`[data-topnav]` both use `flex-wrap: wrap` (AC6).
+- Two live API tests: a fresh account can `/api/tab/topup` before ever
+  sitting (AC5's "usable without first busting"), and `/api/history`
+  returns `{ hands: [] }` (not an error) for a brand-new account.
+- A consolidated AC7 check that `data-tab` and `renderHistory`'s own
+  markup (`data-history`, `data-history-list`, `data-history-result`)
+  are unchanged — backed up by every pre-existing hand-history/tab test
+  (`tests/hand-history.test.ts`, `tests/tab.test.ts`,
+  `tests/rebuy-topup.test.ts`) still passing unmodified.
+
+Ran the full suite 4 consecutive times (164/164 each, stable).
+
+Deliberately not covered: real click-driven DOM interaction (no
+jsdom/browser harness) — verified instead with the headless-Chrome-
+plus-real-markup technique during `/implement` (three mockups: the
+dashboard alone, the same at 375px/320px phone widths, and the seated
+table view with the topbar composed on top) — see Implementation
+Notes. Also not covered: a dedicated test asserting the disabled
+Settings button's exact visual treatment (color/opacity) — the CSS
+rule exists and was confirmed visually (grayed out, clearly
+non-interactive in the screenshot) but isn't asserted numerically,
+consistent with how this project doesn't unit-test cosmetic CSS values
+elsewhere either.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._

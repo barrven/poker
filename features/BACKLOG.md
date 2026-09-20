@@ -9,7 +9,7 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 018 | Responsive app-shell dashboard | testing | medium | 5 | [018-dashboard-shell.md](018-dashboard-shell.md) |
+| 018 | Responsive app-shell dashboard | validating | medium | 5 | [018-dashboard-shell.md](018-dashboard-shell.md) |
 
 <!-- 015 (card images) is scheduled before 016 (oval layout) so the table
 layout is rebuilt around the new card rendering rather than redone twice.
