@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 5
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 015-card-images
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — validated 015-card-images (pass: typecheck/lint/build clean, 139/139 tests x5 runs, live curl walkthrough of preflop->river board growth + showdown reveal, all 6 acceptance criteria checked; AC5 by inspection — no browser extension connected this run; hand history's plain-text cards flagged as a scope call for `/accept`); phase set to `accept`
 - 2026-09-20 — tested 015-card-images (9 new tests in tests/card-images.test.ts, 139/139 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 015-card-images (vite publicDir serves card-svgs/ at root; hole/board/revealed cards render as `<img>`, hidden opponent hole cards show card-backs until showdown); phase set to `test`
 - 2026-09-20 — scheduled iteration 5 slice (015-card-images, 016-table-layout, 017-login-register-flow, 018-dashboard-shell — the full UI-overhaul requirement set from the spec revision); active 015-card-images; phase set to `implement`

@@ -9,7 +9,7 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 015 | Card images for hole and community cards | validating | high | 5 | [015-card-images.md](015-card-images.md) |
+| 015 | Card images for hole and community cards | accept | high | 5 | [015-card-images.md](015-card-images.md) |
 | 016 | Poker table layout (oval seating) | backlog | high | 5 | [016-table-layout.md](016-table-layout.md) |
 | 017 | Standard login/register flow | backlog | medium | 5 | [017-login-register-flow.md](017-login-register-flow.md) |
 | 018 | Responsive app-shell dashboard | backlog | medium | 5 | [018-dashboard-shell.md](018-dashboard-shell.md) |

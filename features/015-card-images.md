@@ -1,7 +1,7 @@
 ---
 id: 015
 title: Card images for hole and community cards
-status: validating
+status: accept
 priority: high
 iteration: 5
 ---
@@ -18,17 +18,17 @@ user's stated top priority for this slice.
 ## Acceptance Criteria
 _Testable, checkable statements. `/validate` and `/accept` check against these directly._
 
-- [ ] The player's own two hole cards render using the matching
+- [x] The player's own two hole cards render using the matching
       `card-svgs/<rank><suit>.svg` image for each dealt card.
-- [ ] Community cards render using the matching `card-svgs/` image as
+- [x] Community cards render using the matching `card-svgs/` image as
       each street is revealed (flop shows 3, turn adds 1, river adds 1).
-- [ ] Opponent hole cards that are hidden show a card-back image, not
+- [x] Opponent hole cards that are hidden show a card-back image, not
       the real card and not plain text, until showdown.
-- [ ] At showdown, opponent hole cards that are shown (per existing
+- [x] At showdown, opponent hole cards that are shown (per existing
       showdown/muck rules) render as real card images.
-- [ ] Card images are legible and correctly sized with no distortion or
+- [x] Card images are legible and correctly sized with no distortion or
       overlap on both a desktop viewport and a phone-width viewport.
-- [ ] No plain-text card notation (e.g. "AS", "Kh") remains visible
+- [x] No plain-text card notation (e.g. "AS", "Kh") remains visible
       anywhere a card image now appears.
 
 ## Implementation Notes
@@ -110,6 +110,77 @@ added there.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+
+**Tooling:** `typecheck` clean (all 4 project tsconfigs), `lint` clean
+(biome, 36 files), `build` clean (`vite build` + server `tsc`; confirmed
+all 56 `card-svgs/*.svg` files land in `dist/client/`). Full test suite:
+139/139, run 5 consecutive times with no flakes (the showdown-reveal
+test in `tests/card-images.test.ts` and the pre-existing
+`playToSettlement`-based tests both depend on real randomness).
+
+**Live walkthrough (curl against the real API + dev server, not just
+the test suite):** registered a user, sat down, dealt a hand, and drove
+it action-by-action to a real showdown. Observed street/board
+progression directly from `/api/hand/action` responses:
+`preflop: []` -> `flop: [3 cards]` -> `turn: [4 cards]` ->
+`river: [5 cards]`, then a `showdown` settlement with a `revealed` array
+carrying 2 real cards per contending seat (e.g. `Kh`, `7h`). Separately
+confirmed `/KS.svg`, `/KH.svg`, `/1B.svg` etc. all resolve 200 over the
+Vite dev server. This ties the exact data shape `renderCards` /
+`renderHiddenCards` consume (`src/main.ts`) to what the server actually
+sends, end to end. (Cleaned up: left the table, no stray dev processes
+left running, `git status` clean afterward.)
+
+No headless-Chrome/browser check was possible this run — no browser
+extension is connected to this account at all (`list_connected_browsers`
+returned empty), not just a flaky connection, so this isn't a retryable
+gap. In its place: (1) verified by direct byte-level inspection that
+every `card-svgs/*.svg`'s `viewBox`/`width`/`height` is exactly a 5:7
+ratio, matching `.card-img`'s CSS `aspect-ratio: 5 / 7` precisely — a
+width-driven, ratio-locked `<img>` cannot distort against an intrinsic
+ratio identical to its own; (2) `[data-hole-cards]`, `[data-board]`,
+`.cards`, and `[data-seats] li` all use `flex-wrap: wrap`, the same
+wrapping approach feature 013 already validated with real headless
+Chrome at 375px for this same seat list; (3) the 480px `.card-img` width
+override follows the existing phone breakpoint pattern from 013 exactly.
+This is a reasoned-through pass, not an observed one — flagging
+explicitly rather than claiming a visual check that didn't happen.
+Recommend a human eyeball this on `/accept` (or next time a browser is
+connected) given it's the one AC not mechanically checked.
+
+Per-criterion:
+1. **Pass.** `renderHand`'s `data-hole-cards` calls
+   `renderCards(hand.holeCards)`; live walkthrough's `holeCards` field
+   (`["4h","Jh"]` etc.) matches the `rank+suit` shape `cardImageSrc`
+   expects, and `tests/card-images.test.ts` confirms every deck card has
+   a matching SVG file.
+2. **Pass.** Confirmed live: board array is `[]` at preflop, length 3 at
+   flop, 4 at turn, 5 at river; `renderCards(hand.board)` maps every
+   entry to an `<img>` (same helper as AC1, same guarantee).
+3. **Pass.** Computer seats default to `renderHiddenCards(2)`
+   (`src/main.ts`, `renderHand`'s seat map) whenever `hand.result` is
+   absent or the seat isn't in `hand.result.revealed` — includes the
+   fold-out case, where no seat is ever revealed.
+4. **Pass.** Live showdown's `revealed` array (2 real cards per
+   contending seat) is looked up by `seat.index` and rendered via
+   `renderCards(revealedEntry.cards)`; the non-contending (folded) seats
+   correctly stayed on `renderHiddenCards(2)` since they're absent from
+   `revealed`.
+5. **Pass, by inspection/geometry (see above) — not independently
+   observed in a browser this run.**
+6. **Pass, for the live hand view** (hole cards, board, seat cards,
+   showdown reveal — every spot that used to be `X.join(" ")` text is
+   now `renderCards`/`renderHiddenCards`, confirmed by the regression
+   guards in `tests/card-images.test.ts`). Hand history's past-hand list
+   still shows text card codes — carried over from Implementation
+   Notes' reading that AC6 only applies where an image now appears, and
+   history isn't in this feature's scope. Flagging for `/accept` to
+   confirm that reading is what the user wants, rather than deciding it
+   silently.
+
+**Outcome: all 6 acceptance criteria pass** (AC5 by inspection, AC6's
+in-scope surfaces confirmed, hand-history text flagged as a scope call
+for `/accept` to bless). No bounce-back needed.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
