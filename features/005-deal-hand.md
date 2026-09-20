@@ -1,7 +1,7 @@
 ---
 id: 005
 title: Deal a Hold'em hand
-status: accept
+status: testing
 priority: high
 iteration: 2
 ---
@@ -82,23 +82,52 @@ calls, not blockers):
   `dealRiver` are tested by calling them directly against a `HandState`,
   not through an HTTP endpoint. There is deliberately no
   `POST /api/hand/advance` yet.
-- **No frontend card UI.** The Description says "cards... then flop/turn
-  /river" and AC5 says hole cards are "available to the human client" —
-  read as an API-level contract (the data is there for a client to
-  render), not a UI requirement. Feature 008 ("Readable table view") is
-  explicitly scoped to the actual table display; adding partial card UI
-  here would duplicate that work. `npm run dev` still shows the
-  post-004 signed-in/table view unchanged.
+- ~~**No frontend card UI.**~~ **Reversed after `/accept` feedback** — see
+  below. Originally read AC5 ("available to the human client") as an
+  API-level contract only, reasoning that feature 008 ("Readable table
+  view") owns the actual table display. The user tried the running app
+  and correctly pushed back: with no trigger anywhere in the UI, the
+  feature wasn't actually usable, only reachable via curl/tests. Added
+  a minimal, real UI path — not 008's full polish, just enough to use
+  what this feature built:
+  - Seated + no hand in progress: a "Deal hand" button (`#deal`,
+    `data-deal`) above the existing seat list from 004.
+  - `POST /api/hand/start` on click; on success, switches to a hand view
+    showing street, board (`—` preflop), the human's own two hole cards,
+    and all six seats with their current stacks and a `D`/`SB`/`BB`
+    marker next to the button/blind seats, plus "Leave table".
+  - Hand state is fetched (`GET /api/hand`) and restored on login/initial
+    load when seated, same "reload doesn't reset state" spirit as 004's
+    tab persistence (the server already keeps it in memory per session,
+    so this was a small addition, not new server work).
+  - Still deliberately *not* attempting 008's job: no felt/board-position
+    layout, no card-face graphics (cards render as plain text like
+    `"As"`), no action controls (006 hasn't shipped betting yet). This is
+    the minimum for "the feature is actually usable," not the finished
+    table view.
 
 Files: `server/poker/deck.ts` (new), `server/poker/hand.ts` (new),
-`server/table.ts` (rewritten), `server/app.ts` (+2 routes, +3 imports).
+`server/table.ts` (rewritten), `server/app.ts` (+2 routes, +3 imports),
+`src/main.ts` (deal button + hand view, added after `/accept` feedback).
 
 ## Test Notes
 
 `tests/hand.test.ts` (new, 8 tests — pure engine, no server) and
-`tests/deal.test.ts` (new, 6 tests — API integration) via `npm test`
-(44/44 total: 8 hand + 6 deal + 4 lint + 8 table + 7 auth + 5 tab + 6
-scaffold).
+`tests/deal.test.ts` (new, 9 tests — API integration + the deal-button/
+hand-view UI added after `/accept` feedback) via `npm test` (47/47
+total: 8 hand + 9 deal + 4 lint + 8 table + 7 auth + 5 tab + 6 scaffold).
+
+The 3 UI tests added alongside the deal-button fix (source-text checks,
+same convention as `tests/table.test.ts`'s `renderTable` checks — no
+jsdom in this project): `renderDealControl()`'s output has `id="deal"`,
+`data-deal`, and "Deal hand" text, and something in the file wires a
+click handler on `#deal` to `/api/hand/start`; `renderHand()`'s output
+has `data-street`/`data-board`/`data-hole-cards`/`data-seats`, uses
+`hand.button`/`hand.smallBlindSeat`/`hand.bigBlindSeat` (the marker
+logic) and a "Leave table" (`id="leave"`) control; the guest markup
+(scoped the same way `tests/table.test.ts` scopes its sit-control check)
+never contains a deal control, mirroring the existing logged-out
+guarantee for the sit button.
 
 `tests/hand.test.ts` covered directly against `server/poker/deck.ts` and
 `server/poker/hand.ts` (a deterministic non-constant injected `rng`, no
@@ -132,10 +161,11 @@ Deliberately not: `POST /api/hand/advance`-style street progression via
 the API (doesn't exist yet — AC4 explicitly permits a test harness for
 that, which `tests/hand.test.ts` already exercises directly against the
 engine; live advancement is wired in feature 006 when betting completes
-a round); frontend rendering of hole cards/board (feature 008's scope,
-per Implementation Notes); button rotation across multiple hands
-(feature 010, deferred — only the fixed first-hand default is tested
-here).
+a round); the *full* readable table view — felt/board layout, card-face
+graphics, action controls (still feature 008/006's scope; only a minimal
+text-based deal button and hand view were added, per Implementation
+Notes); button rotation across multiple hands (feature 010, deferred —
+only the fixed first-hand default is tested here).
 
 Found during this stage: `tests/deal.test.ts` initially imported
 `fileURLToPath` unused (copy-paste from `tests/table.test.ts`'s header,
@@ -194,4 +224,12 @@ API yet, no frontend card UI yet) — all deliberate and documented there.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-19 — Changes requested. User tried the running app and said:
+"i don't see a way to start the deal. there is no button." Correct catch:
+Implementation Notes' assumption that all frontend UI could wait for
+feature 008 (readable table view) was too aggressive — 005 needs *some*
+reachable way to trigger `POST /api/hand/start` from the actual app, not
+just via the API/tests, for the feature to be genuinely usable. Sending
+back to `/implement` for a minimal UI addition (see Implementation Notes
+for the planned scope — a "Deal hand" trigger and a minimal in-progress
+display, not the full table view 008 owns).

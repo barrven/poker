@@ -16,6 +16,17 @@ type Session = {
 const BUY_IN = 200;
 const COMPUTER_SEATS = 5;
 
+type HandSeatView = { index: number; kind: "human" | "computer"; stack: number };
+type HandView = {
+  button: number;
+  smallBlindSeat: number;
+  bigBlindSeat: number;
+  street: string;
+  board: string[];
+  holeCards: string[];
+  seats: HandSeatView[];
+};
+
 type View =
   | { kind: "loading" }
   | { kind: "guest"; error: string }
@@ -25,6 +36,7 @@ type View =
       tab: number;
       seated: boolean;
       stack: number;
+      hand: HandView | undefined;
       error: string;
     };
 
@@ -105,6 +117,41 @@ function parseSession(body: unknown): Session | undefined {
   };
 }
 
+function parseHandView(body: unknown): HandView | undefined {
+  if (typeof body !== "object" || body === null) {
+    return undefined;
+  }
+  const b = body as Record<string, unknown>;
+  if (
+    typeof b.button !== "number" ||
+    typeof b.smallBlindSeat !== "number" ||
+    typeof b.bigBlindSeat !== "number" ||
+    typeof b.street !== "string" ||
+    !Array.isArray(b.board) ||
+    !Array.isArray(b.holeCards) ||
+    !Array.isArray(b.seats)
+  ) {
+    return undefined;
+  }
+  return {
+    button: b.button,
+    smallBlindSeat: b.smallBlindSeat,
+    bigBlindSeat: b.bigBlindSeat,
+    street: b.street,
+    board: b.board as string[],
+    holeCards: b.holeCards as string[],
+    seats: b.seats as HandSeatView[],
+  };
+}
+
+async function fetchCurrentHand(): Promise<HandView | undefined> {
+  const response = await api("/api/hand");
+  if (!response.ok) {
+    return undefined;
+  }
+  return parseHandView(await response.json());
+}
+
 function formatChips(amount: number): string {
   return amount.toLocaleString("en-US");
 }
@@ -123,7 +170,11 @@ function render(): void {
     const error = view.error
       ? `<p class="status" data-state="error">${escapeHtml(view.error)}</p>`
       : "";
-    const table = view.seated ? renderTable(view.stack) : renderSitControl(view.tab);
+    const table = view.seated
+      ? view.hand
+        ? renderHand(view.hand)
+        : `${renderDealControl()}${renderTable(view.stack)}`
+      : renderSitControl(view.tab);
     app.innerHTML = `
       <h1>Poker</h1>
       <p>No-Limit Texas Hold'em vs computer. Play-money chips.</p>
@@ -141,6 +192,9 @@ function render(): void {
     });
     app.querySelector("#leave")?.addEventListener("click", () => {
       void onLeave();
+    });
+    app.querySelector("#deal")?.addEventListener("click", () => {
+      void onDeal();
     });
     return;
   }
@@ -203,6 +257,38 @@ function renderTable(stack: number): string {
   `;
 }
 
+function renderDealControl(): string {
+  return `<p><button type="button" id="deal" data-deal>Deal hand</button></p>`;
+}
+
+function renderHand(hand: HandView): string {
+  const seatsHtml = hand.seats
+    .map((seat) => {
+      const label = seat.kind === "human" ? "You" : `Computer ${seat.index}`;
+      const markers = [
+        seat.index === hand.button ? "D" : "",
+        seat.index === hand.smallBlindSeat ? "SB" : "",
+        seat.index === hand.bigBlindSeat ? "BB" : "",
+      ]
+        .filter(Boolean)
+        .join("/");
+      const tag = markers ? ` (${markers})` : "";
+      const seatKey = seat.kind === "human" ? "you" : `cpu-${seat.index}`;
+      return `<li data-seat="${seatKey}">${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips</li>`;
+    })
+    .join("");
+  const boardText = hand.board.length ? hand.board.join(" ") : "—";
+  return `
+    <div data-hand>
+      <p data-street>Street: ${escapeHtml(hand.street)}</p>
+      <p data-board>Board: ${escapeHtml(boardText)}</p>
+      <p data-hole-cards>Your cards: ${escapeHtml(hand.holeCards.join(" "))}</p>
+      <ul data-seats>${seatsHtml}</ul>
+      <p><button type="button" id="leave">Leave table</button></p>
+    </div>
+  `;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -246,6 +332,7 @@ async function onRegister(form: HTMLFormElement): Promise<void> {
     tab: session.tab,
     seated: session.seated,
     stack: session.stack,
+    hand: session.seated ? await fetchCurrentHand() : undefined,
     error: "",
   };
   render();
@@ -275,6 +362,7 @@ async function onLogin(form: HTMLFormElement): Promise<void> {
     tab: session.tab,
     seated: session.seated,
     stack: session.stack,
+    hand: session.seated ? await fetchCurrentHand() : undefined,
     error: "",
   };
   render();
@@ -302,7 +390,7 @@ async function onSit(): Promise<void> {
     render();
     return;
   }
-  view = { kind: "signed-in", ...session, error: "" };
+  view = { kind: "signed-in", ...session, hand: undefined, error: "" };
   render();
 }
 
@@ -322,7 +410,27 @@ async function onLeave(): Promise<void> {
     render();
     return;
   }
-  view = { kind: "signed-in", ...session, error: "" };
+  view = { kind: "signed-in", ...session, hand: undefined, error: "" };
+  render();
+}
+
+async function onDeal(): Promise<void> {
+  if (view.kind !== "signed-in") {
+    return;
+  }
+  const response = await api("/api/hand/start", { method: "POST", body: "{}" });
+  if (!response.ok) {
+    view = { ...view, error: await readError(response) };
+    render();
+    return;
+  }
+  const hand = parseHandView(await response.json());
+  if (!hand) {
+    view = { ...view, error: "Something went wrong." };
+    render();
+    return;
+  }
+  view = { ...view, hand, error: "" };
   render();
 }
 
@@ -331,7 +439,12 @@ render();
 try {
   const session = await loadSession();
   view = session
-    ? { kind: "signed-in", ...session, error: "" }
+    ? {
+        kind: "signed-in",
+        ...session,
+        hand: session.seated ? await fetchCurrentHand() : undefined,
+        error: "",
+      }
     : { kind: "guest", error: "" };
 } catch {
   view = { kind: "guest", error: "API unreachable. Is npm run dev running?" };
