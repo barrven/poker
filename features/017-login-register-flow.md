@@ -1,7 +1,7 @@
 ---
 id: 017
 title: Standard login/register flow
-status: validating
+status: accept
 priority: medium
 iteration: 5
 ---
@@ -17,17 +17,17 @@ handling) from feature 002.
 ## Acceptance Criteria
 _Testable, checkable statements. `/validate` and `/accept` check against these directly._
 
-- [ ] A logged-out visitor's default view is a login form only
+- [x] A logged-out visitor's default view is a login form only
       (username, password, submit) — the register form is not shown on
       the same page.
-- [ ] The login view has a visible link/button to a separate
+- [x] The login view has a visible link/button to a separate
       registration view.
-- [ ] The registration view has a visible link/button back to the
+- [x] The registration view has a visible link/button back to the
       login view.
-- [ ] Submitting a valid registration results in a clear next step
+- [x] Submitting a valid registration results in a clear next step
       (either signed in directly, or returned to login with a visible
       success indicator — implementer's call, note which was chosen).
-- [ ] Existing auth behavior is unchanged: duplicate username shows a
+- [x] Existing auth behavior is unchanged: duplicate username shows a
       visible error, failed login shows a visible error, passwords are
       still hashed (not plaintext), and a session still survives a page
       refresh.
@@ -117,6 +117,57 @@ and error placement.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+
+**Tooling:** `typecheck` clean (all 4 tsconfigs), `lint` clean (biome,
+38 files), `build` clean (`vite build` + server `tsc`). Full test
+suite: 153/153, run 5 consecutive times with no flakes.
+
+**Live end-to-end walkthrough (curl against the real API):** register
+→ `/api/me` immediately succeeds with the new session (AC4: signed in
+directly, no separate login step needed) → logout → `/api/me` now 401
+→ login with the same credentials → `/api/me` succeeds again. Confirms
+the full real auth cycle this feature's client-side view sits on top of
+is intact.
+
+**Real rendered screenshots** (done during `/implement`, referenced
+here): two standalone HTML files reproducing the actual login-view and
+register-view markup against the actual `src/style.css`, screenshotted
+with headless Chrome. Confirmed: exactly one form visible in each,
+never both; each form's toggle link is visibly present and reads
+correctly ("Need an account? Register" / "Already have an account? Log
+in"); an error message (mocked "That username is taken.") renders
+correctly above the register form in its usual place.
+
+Per-criterion:
+1. **Pass.** `render()`'s guest branch picks `loginForm` unless
+   `view.authView === "register"`; every guest-view construction site
+   that isn't "the register submission just failed" defaults to
+   `"login"` (initial load, API-unreachable, logout, failed login) —
+   checked individually in `tests/login-register-flow.test.ts`, not
+   just "authView is present somewhere." Confirmed visually: the
+   login-only screenshot shows no register fields at all.
+2. **Pass.** `loginForm` contains `#show-register`
+   ("Need an account? Register"), wired to flip `authView` client-side
+   with no network call — confirmed in source and visually.
+3. **Pass.** `registerForm` contains `#show-login`
+   ("Already have an account? Log in"), same wiring — confirmed in
+   source and visually.
+4. **Pass.** Chose "signed in directly" (the simpler of AC4's two
+   options): a successful `/api/register` already creates a session
+   (unchanged from feature 002), and `onRegister` moves straight to
+   `kind: "signed-in"` — confirmed live via curl (`/api/me` succeeds
+   immediately after register, no separate login round-trip needed).
+5. **Pass.** All server-side guarantees this criterion names (hashing,
+   duplicate-username error, generic failed-login error,
+   session-survives-refresh) are untouched code (`server/auth.ts` /
+   `server/app.ts` not modified by this feature) and still pass their
+   original tests in `tests/auth.test.ts`, unmodified, run alongside
+   the rest of the suite above. Live walkthrough above also confirms
+   the session round-trip end to end.
+
+**Outcome: all 5 acceptance criteria pass**, verified with live API
+calls and real rendered screenshots, not just source inspection. No
+bounce-back needed.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._

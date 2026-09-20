@@ -9,7 +9,7 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 017 | Standard login/register flow | validating | medium | 5 | [017-login-register-flow.md](017-login-register-flow.md) |
+| 017 | Standard login/register flow | accept | medium | 5 | [017-login-register-flow.md](017-login-register-flow.md) |
 | 018 | Responsive app-shell dashboard | backlog | medium | 5 | [018-dashboard-shell.md](018-dashboard-shell.md) |
 
 <!-- 015 (card images) is scheduled before 016 (oval layout) so the table
