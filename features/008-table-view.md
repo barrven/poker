@@ -1,7 +1,7 @@
 ---
 id: 008
 title: Readable table view
-status: testing
+status: validating
 priority: medium
 iteration: 4
 ---
@@ -64,7 +64,39 @@ that basis.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+New file `tests/action-log.test.ts` (3 tests), plus a fix to
+`tests/deal.test.ts`'s existing strict `HandView` key-set assertion
+(added `"actionLog"`, since that field is new).
+
+Covered:
+- Action-log ordering and amount presence: every entry's `street` is
+  correct, amount-bearing actions (`call`/`bet`/`raise`/`all-in`) carry
+  a numeric `amount`, amount-less ones (`fold`/`check`) don't; earlier
+  entries are never rewritten when new ones append; the human's own
+  action lands in the log right after their turn.
+- Reset on new hand: a fresh `/api/hand/start` always has a non-empty
+  log (computers already acted preflop) whose entries are all
+  `street: "preflop"` — proof the previous hand's log didn't leak in.
+- Frontend wiring: `renderHand` sets `data-acting` off `hand.actingSeat`
+  and renders `<p data-turn>`; `renderActionLog` renders `data-action-log`
+  / `data-street-tag`. Checked by source inspection (same regex-based
+  pattern the rest of this file's UI tests already use for `main.ts`),
+  not a browser — this repo has no browser test runner.
+
+Deliberately not covered:
+- Exact turn-indicator text ("Turn: Computer 3" vs "Waiting…" vs "Hand
+  settled.") — implementation detail of `renderHand`, not an
+  acceptance criterion; the acceptance criterion is "whose turn it is
+  is visible," which the `data-turn`/`actingSeat` wiring check already
+  establishes.
+- Visual rendering (colors, layout, `[data-acting]` CSS highlight
+  actually being visible) — confirmed manually via a live curl
+  walkthrough against an isolated server instance during `/validate`,
+  not asserted in the automated suite (no browser runner in this repo).
+
+Full suite: 118/118 passing, run 4 times in a row (real, unseeded
+computer decisions mean this is the standard stability check for any
+feature touching hand/betting state, same as every prior feature).
 
 ## Validation Notes
 
