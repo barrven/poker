@@ -9,7 +9,7 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 014 | Lint tooling | validating | high | 2 | [014-lint-setup.md](014-lint-setup.md) |
+| 014 | Lint tooling | accept | high | 2 | [014-lint-setup.md](014-lint-setup.md) |
 | 005 | Deal a Hold'em hand | backlog | high | 2 | [005-deal-hand.md](005-deal-hand.md) |
 | 006 | Betting rounds and legal actions | backlog | high | 2 | [006-betting.md](006-betting.md) |
 | 007 | Showdown, pots, and hand ranking | backlog | high | 2 | [007-showdown-pots.md](007-showdown-pots.md) |

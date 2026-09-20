@@ -1,7 +1,7 @@
 ---
 id: 014
 title: Lint tooling
-status: validating
+status: accept
 priority: high
 iteration: 2
 ---
@@ -16,15 +16,17 @@ Constraints added to `docs/SPEC.md` in the iteration-1 retro.
 
 ## Acceptance Criteria
 
-- [ ] `npm run lint` exists and runs ESLint over `server/`, `src/`, and
-      `tests/`.
-- [ ] `npm run lint` passes with no errors against the current codebase
+- [x] `npm run lint` exists and runs ESLint over `server/`, `src/`, and
+      `tests/`. (Shipped with **Biome** instead of ESLint — see
+      Implementation/Validation Notes for why; scope over the three
+      directories is met.)
+- [x] `npm run lint` passes with no errors against the current codebase
       (fix or justify any findings it surfaces on existing code, don't
       just silence the rule).
-- [ ] The config matches the existing stack: TypeScript-aware, and
+- [x] The config matches the existing stack: TypeScript-aware, and
       consistent with the project's `tsconfig*.json` project references
       (no separate/parallel type-checking setup).
-- [ ] A deliberately bad file (e.g. an unused variable or `any`-typed
+- [x] A deliberately bad file (e.g. an unused variable or `any`-typed
       value where the project's style disallows it) makes `npm run lint`
       fail with a non-zero exit code, so the check is real.
 
@@ -114,7 +116,55 @@ project (the test's tmp dir is under the OS tmp root, not nested in
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-19 — pass, with one flagged deviation. Ready for `/accept`.
+
+Project checks — all four now pass, including lint for the first time in
+this project's history:
+- lint: **pass** (`npm run lint` — `biome lint --error-on-warnings .`)
+- typecheck: pass
+- build: pass
+- tests: pass (`npm test` — 30/30: 4 lint + 8 table + 7 auth + 5 tab +
+  6 scaffold)
+
+**Flagged deviation, carried from Implementation Notes:** this feature's
+own Acceptance Criteria (which I wrote during `/features`, this same
+session) literally say "ESLint." I shipped **Biome** instead, because
+`typescript-eslint` (parser, plugin, and meta-package) has a hard,
+unconditional guard that throws `"typescript-eslint does not support TS
+7.0."` merely on import — verified directly (`npm install eslint
+typescript-eslint` then `npx eslint .` failed before any rule ran, even
+with a non-type-aware config). `docs/SPEC.md`'s Constraints section
+(added in the iteration-1 retro) also names ESLint specifically, so this
+is a deviation from the user-approved spec wording, not just the feature
+file. Recommend fixing the spec wording ("ESLint" → "a linter") at the
+next `/retro` — flagging for `/accept` now rather than editing the spec
+mid-validate.
+
+1. **Pass (tool substituted, scope met).** `npm run lint` exists
+   (`biome lint --error-on-warnings .`) and covers `server/`, `src/`,
+   `tests/`: `biome.json`'s `files.includes` is
+   `["server/**", "src/**", "tests/**"]`; a verbose run lists all 12
+   `.ts` files under those three directories (plus `src/style.css`,
+   harmlessly caught by the same glob).
+2. **Pass.** `npm run lint` exits 0 with "No fixes applied" and no
+   errors/warnings against the current codebase (two real findings from
+   the initial `biome init` run — a comma-operator expression in
+   `server/app.ts` and an ambiguous double-space regex in
+   `tests/table.test.ts` — were fixed, not suppressed; see Implementation
+   Notes).
+3. **Pass.** `biome.json` has `formatter.enabled: false` and
+   `assist.enabled: false` (lint-only, no reformat of the existing
+   2-space codebase) and contains no type-checking configuration —
+   Biome's own parser handles TypeScript syntax without invoking `tsc`
+   or the `typescript` package at all, so it cannot diverge from or
+   duplicate what `npm run typecheck` (the project's real tsconfig
+   project references) already owns.
+4. **Pass.** Verified twice: manually (a temp file with an unused
+   variable dropped into `server/`, `npm run lint` → exit 1, file
+   removed) and mechanically in `tests/lint.test.ts` (an isolated tmp
+   dir, the project's own `node_modules/.bin/biome` binary,
+   `--error-on-warnings` on a bad file → non-zero exit, asserted via
+   `assert.throws`).
 
 ## Acceptance Log
 
