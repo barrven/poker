@@ -1,7 +1,7 @@
 ---
 id: 016
 title: Poker table layout (oval seating)
-status: testing
+status: validating
 priority: high
 iteration: 5
 ---
@@ -91,6 +91,56 @@ eye. Flagging this the same way feature 015 flagged its own AC5 gap.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
+
+New file `tests/table-layout.test.ts` (8 tests, source-regex + CSS-parsing
+convention, same reasoning as the rest of `tests/` — no jsdom/browser
+harness in this project):
+
+- Both `renderTable` and `renderHand` assign every one of the 6 seats a
+  `seat-slot-{1..6}` class (AC1) — checked against the actual loop/
+  index expressions (`i + 2`, `seat.index + 1`), not a hardcoded list.
+- Seats render inside the shared `renderTableOval` wrapper
+  (`.table-oval`/`.table-center`), not a bare list.
+- Dealer/SB/BB markers are `.marker-badge` spans keyed off
+  `hand.button`/`smallBlindSeat`/`bigBlindSeat`, with a regression guard
+  against the old parenthetical-text form (AC4).
+- Stack/bet/pot amounts are all prefixed with `CHIP_ICON`; `.chip-icon`
+  is circular (AC4).
+- `[data-seats]`' base (mobile-first) rule is `display: grid` with no
+  `position: absolute` — confirms the always-safe fallback is the
+  *default*, not just a phone override (AC3) — and the `min-width: 640px`
+  query is where the real oval (`border-radius: 50%`,
+  `position: absolute`) lives.
+- **Two geometry tests** parse the actual CSS values (`.table-oval`
+  max-width/aspect-ratio, `[data-seats] li` width, each `.seat-slot-N`'s
+  left/top%) and compute real pixel arithmetic: every seat box stays
+  fully inside the felt horizontally (AC2/AC1), and adjacent seat rows
+  keep a checked minimum vertical gap so two text-heavy boxes can't
+  stack on each other. These aren't just "does the CSS exist" checks —
+  confirmed real by deliberately regressing `.seat-slot-3`'s `left` to
+  2% during `/implement` and watching the horizontal test fail, then
+  reverting.
+- A consolidated AC5 check: every pre-existing table-view data hook
+  (`data-street`, `data-turn`, `data-hole-cards`, `data-pot`,
+  `data-board`, `data-seats`, `data-acting`, `hand.button`,
+  `hand.smallBlindSeat`, `hand.bigBlindSeat`, the action log call,
+  `id="leave"`) is still present in `renderHand`'s source. The full
+  pre-existing suite (deal.test.ts, action-log.test.ts, showdown.test.ts,
+  etc.) also still passes unmodified, which is itself a strong AC5
+  signal — none of those tests needed changes for this feature.
+
+Ran the full suite 4 consecutive times (147/147 each) — no flakiness
+introduced (this feature added no live-server/randomness-dependent
+tests, unlike 015's).
+
+Deliberately not covered: no actual rendered-pixel/visual check — no
+browser extension was connected to this account at all this session
+(`list_connected_browsers` returned empty, both during `/implement` and
+again checked here), so a real screenshot-based check wasn't possible.
+The geometry tests are the closest substitute: real arithmetic against
+the real CSS values, not just presence checks, but they're still a
+model of the layout, not an observation of it. Flagging for `/validate`
+and `/accept`, same as feature 015's AC5 gap.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._

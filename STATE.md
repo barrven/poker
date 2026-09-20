@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 5
-- **Phase:** test
+- **Phase:** validate
 - **Active feature:** 016-table-layout
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — tested 016-table-layout (8 new tests in tests/table-layout.test.ts, incl. 2 real geometry checks parsing CSS values, 147/147 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 016-table-layout (oval seat layout via CSS seat-slot classes, mobile-first grid fallback below 640px, dealer/blind marker badges, chip icons for stack/bet/pot); phase set to `test`
 - 2026-09-20 — accepted 015-card-images (accept and continue; hand-history plain-text cards and the AC5 inspection-only check acknowledged); active 016-table-layout; phase set to `implement`
 - 2026-09-20 — validated 015-card-images (pass: typecheck/lint/build clean, 139/139 tests x5 runs, live curl walkthrough of preflop->river board growth + showdown reveal, all 6 acceptance criteria checked; AC5 by inspection — no browser extension connected this run; hand history's plain-text cards flagged as a scope call for `/accept`); phase set to `accept`
