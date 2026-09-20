@@ -140,6 +140,7 @@ test("a seated player can start a hand: dealer button visible, blinds posted fro
     assert.equal(view.holeCards.length, 2);
     assert.deepEqual(Object.keys(view).sort(), [
       "actingSeat",
+      "actionLog",
       "bigBlindSeat",
       "board",
       "button",

@@ -1,7 +1,7 @@
 ---
 id: 008
 title: Readable table view
-status: backlog
+status: testing
 priority: medium
 iteration: 4
 ---
@@ -34,6 +34,33 @@ hidden until showdown (or stay mucked on a fold-win).
 Table chrome (felt color, chip art, card backs) is an open question.
 This feature is a readable table, not a themed one. Visual polish is
 secondary to a legal, readable layout.
+
+Server (`server/table.ts`): added `ActionLogEntry` (`{ seat, action,
+amount?, street }`) and an `actionLog: ActionLogEntry[]` field on both
+`TableSession` and `HandView`. A `recordAction()` helper appends one
+entry per action; amount is omitted for `fold`/`check` (nothing was
+committed) and present for `call`/`bet`/`raise`/`all-in`. Wired into
+`advanceComputerActions()` (per computer decision) and `submitAction()`
+(per human action, tagging the street the action happened on — captured
+*before* applying the action, since a street-completing action can
+advance `hand.street` before the response is built). Reset to `[]` in
+`startHand()` so each hand's log starts empty. The full-hand log lives
+server-side; the client trims to the most recent 8 entries for display
+(`renderActionLog`), same "server keeps the truth, client shows a
+window" split as everything else in this table.
+
+Client (`src/main.ts`): `data-acting` on the seat list item matching
+`actingSeat` (suppressed once `hand.result` is set — nobody's "turn"
+after a hand settles); a `<p data-turn>` line above the board deriving
+its text from `actingSeat`/`result` (`"Turn: <seat>"`, `"Waiting…"`, or
+`"Hand settled."`); `renderActionLog()` renders the trimmed, most-recent-
+first list with per-entry street tag.
+
+Assumption: "recent actions" (Acceptance Criterion 5) is read as
+"recent enough to follow the hand live," not "the complete history for
+this hand" — a full multi-street audit trail is feature 012's job
+(Hand history), not this one's. Capped the client view at 8 entries on
+that basis.
 
 ## Test Notes
 

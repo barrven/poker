@@ -45,6 +45,16 @@ export type SettlementResult = {
   revealed?: { seat: number; cards: Card[]; category: string }[];
 };
 
+export type ActionLogEntry = {
+  seat: number;
+  action: Action;
+  // The seat's total street contribution after this action, for any
+  // action that moves chips (bet/call/raise/all-in) — omitted for
+  // fold/check, which don't.
+  amount?: number;
+  street: HandState["street"];
+};
+
 export type HandView = {
   button: number;
   smallBlindSeat: number;
@@ -61,6 +71,7 @@ export type HandView = {
   legalActions: Action[];
   result: SettlementResult | null;
   seats: SeatView[];
+  actionLog: ActionLogEntry[];
 };
 
 type TableSession = {
@@ -78,6 +89,9 @@ type TableSession = {
   // session deals (feature 010) — a new sit always starts a fresh table,
   // so this is never carried across a leave/re-sit.
   button: number;
+  // Every action taken this hand (human and computer alike), oldest
+  // first — reset each time a new hand is dealt (feature 008, AC5).
+  actionLog: ActionLogEntry[];
 };
 
 // In-memory only: no cards or betting yet, and a reload does not have to
@@ -182,6 +196,7 @@ export function sitDown(db: DatabaseSync, userId: number): SitResult {
     handStartStack: 0,
     result: null,
     button: 0,
+    actionLog: [],
   });
   return { ok: true, tab: newTab, stack: BUY_IN };
 }
@@ -251,6 +266,23 @@ function syncStacks(session: TableSession): void {
   }
 }
 
+const AMOUNT_LESS_ACTIONS: ReadonlySet<Action> = new Set(["fold", "check"]);
+
+function recordAction(
+  session: TableSession,
+  seat: number,
+  action: Action,
+  street: HandState["street"],
+): void {
+  const streetContribution = session.betting?.seats[seat].streetContribution;
+  session.actionLog.push({
+    seat,
+    action,
+    amount: AMOUNT_LESS_ACTIONS.has(action) ? undefined : streetContribution,
+    street,
+  });
+}
+
 // Distance (normalized 0..1) from the seat that acts first post-flop
 // (left of the button) to `seat` — a simple, real position signal: 0 is
 // the worst position (acts first every street), 1 is the best (the
@@ -294,6 +326,7 @@ function advanceComputerActions(session: TableSession): void {
     }
     session.betting = result.state;
     syncStacks(session);
+    recordAction(session, seat, decision.action, hand.street);
   }
 }
 
@@ -432,6 +465,7 @@ function handView(session: TableSession): HandView {
       allIn: betting.seats[index].allIn,
       streetContribution: betting.seats[index].streetContribution,
     })),
+    actionLog: session.actionLog,
   };
 }
 
@@ -460,6 +494,7 @@ export function startHand(
   session.betting = null;
   session.result = null;
   session.handStartStack = session.seats[HUMAN_SEAT].stack;
+  session.actionLog = [];
 
   replenishBustedComputers(session.seats);
 
@@ -515,12 +550,14 @@ export function submitAction(
   if (!session.hand || !session.betting || session.result) {
     return { ok: false, reason: "no-hand" };
   }
+  const street = session.hand.street;
   const result = applyAction(session.betting, HUMAN_SEAT, action, amount);
   if (!result.ok) {
     return { ok: false, reason: "illegal", message: result.reason };
   }
   session.betting = result.state;
   syncStacks(session);
+  recordAction(session, HUMAN_SEAT, action, street);
   progressHand(db, userId, session);
   return { ok: true, view: handView(session) };
 }

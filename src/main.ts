@@ -34,6 +34,13 @@ type SettlementResult = {
   revealed?: { seat: number; cards: string[]; category: string }[];
 };
 
+type ActionLogEntry = {
+  seat: number;
+  action: string;
+  amount?: number;
+  street: string;
+};
+
 type HandView = {
   button: number;
   smallBlindSeat: number;
@@ -50,6 +57,7 @@ type HandView = {
   legalActions: Action[];
   result: SettlementResult | null;
   seats: HandSeatView[];
+  actionLog: ActionLogEntry[];
 };
 
 type View =
@@ -190,7 +198,8 @@ function parseHandView(body: unknown): HandView | undefined {
     typeof b.roundComplete !== "boolean" ||
     !Array.isArray(b.legalActions) ||
     (b.result !== null && typeof b.result !== "object") ||
-    !Array.isArray(b.seats)
+    !Array.isArray(b.seats) ||
+    !Array.isArray(b.actionLog)
   ) {
     return undefined;
   }
@@ -210,6 +219,7 @@ function parseHandView(body: unknown): HandView | undefined {
     legalActions: b.legalActions as Action[],
     result: b.result as SettlementResult | null,
     seats: b.seats as HandSeatView[],
+    actionLog: b.actionLog as ActionLogEntry[],
   };
 }
 
@@ -364,7 +374,8 @@ function renderHand(hand: HandView, tab: number): string {
       const tag = markers ? ` (${markers})` : "";
       const status = seat.folded ? " — folded" : seat.allIn ? " — all-in" : "";
       const seatKey = seat.kind === "human" ? "you" : `cpu-${seat.index}`;
-      return `<li data-seat="${seatKey}">${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips${escapeHtml(status)} (bet ${formatChips(seat.streetContribution)})</li>`;
+      const acting = seat.index === hand.actingSeat && !hand.result ? " data-acting" : "";
+      return `<li data-seat="${seatKey}"${acting}>${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips${escapeHtml(status)} (bet ${formatChips(seat.streetContribution)})</li>`;
     })
     .join("");
   const boardText = hand.board.length ? hand.board.join(" ") : "—";
@@ -374,14 +385,21 @@ function renderHand(hand: HandView, tab: number): string {
     : isHumanTurn
       ? renderActionControls(hand)
       : `<p class="status" data-state="pending">${hand.roundComplete ? "Betting round complete." : "Waiting for other players…"}</p>`;
+  const turnText = hand.result
+    ? "Hand settled."
+    : hand.actingSeat === null
+      ? "Waiting…"
+      : `Turn: ${escapeHtml(seatLabel(hand.actingSeat))}`;
   return `
     <div data-hand>
       <p data-street>Street: ${escapeHtml(hand.street)}</p>
+      <p data-turn>${turnText}</p>
       <p data-pot>Pot: ${formatChips(hand.pot)} chips.</p>
       <p data-board>Board: ${escapeHtml(boardText)}</p>
       <p data-hole-cards>Your cards: ${escapeHtml(hand.holeCards.join(" "))}</p>
       <ul data-seats>${seatsHtml}</ul>
       ${actionArea}
+      ${renderActionLog(hand.actionLog)}
       <p><button type="button" id="leave">Leave table</button></p>
     </div>
   `;
@@ -389,6 +407,38 @@ function renderHand(hand: HandView, tab: number): string {
 
 function seatLabel(seat: number): string {
   return seat === 0 ? "You" : `Computer ${seat}`;
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  fold: "folded",
+  check: "checked",
+  call: "called",
+  bet: "bet",
+  raise: "raised to",
+  "all-in": "went all-in",
+};
+
+function renderActionLog(log: ActionLogEntry[]): string {
+  if (log.length === 0) {
+    return "";
+  }
+  // Most recent first, capped for readability — the full hand's log is
+  // kept server-side, but a scannable "recent actions" list doesn't need
+  // every action from every street on screen at once.
+  const recent = log.slice(-8).reverse();
+  const items = recent
+    .map((entry) => {
+      const verb = ACTION_LABELS[entry.action] ?? entry.action;
+      const amount = entry.amount !== undefined ? ` ${formatChips(entry.amount)}` : "";
+      return `<li>${escapeHtml(seatLabel(entry.seat))} ${escapeHtml(verb)}${escapeHtml(amount)} <span data-street-tag>(${escapeHtml(entry.street)})</span></li>`;
+    })
+    .join("");
+  return `
+    <div data-action-log>
+      <p>Recent actions:</p>
+      <ul>${items}</ul>
+    </div>
+  `;
 }
 
 function renderSettlement(result: SettlementResult, humanStack: number, tab: number): string {

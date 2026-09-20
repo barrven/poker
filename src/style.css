@@ -62,3 +62,91 @@ button {
   padding: 0.35rem 0.8rem;
   cursor: pointer;
 }
+
+/* Readable table view (feature 008): structure and legibility, not
+   themed chrome — no felt texture, chip art, or card graphics. */
+
+[data-hand] {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid #2c5a3e;
+  border-radius: 0.35rem;
+}
+
+[data-turn] {
+  font-weight: 600;
+  margin: 0;
+}
+
+[data-hole-cards],
+[data-board] {
+  font-family: "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+
+[data-seats] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+[data-seats] li {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  background: rgba(232, 228, 217, 0.04);
+}
+
+[data-seats] li[data-acting] {
+  border-color: #b6e3b6;
+  background: rgba(182, 227, 182, 0.1);
+}
+
+[data-actions] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+[data-actions] input[type="number"] {
+  width: 6rem;
+}
+
+[data-action-log] {
+  font-size: 0.9rem;
+  color: #c8c0a8;
+  border-top: 1px solid #2c5a3e;
+  padding-top: 0.5rem;
+}
+
+[data-action-log] ul {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+[data-street-tag] {
+  color: #8fa88f;
+}
+
+[data-settlement] {
+  display: grid;
+  gap: 0.4rem;
+}
+
+[data-revealed] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+  font-family: "Courier New", monospace;
+}

@@ -9,7 +9,7 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 008 | Readable table view | backlog | medium | 4 | [008-table-view.md](008-table-view.md) |
+| 008 | Readable table view | testing | medium | 4 | [008-table-view.md](008-table-view.md) |
 | 012 | Hand history | backlog | medium | 4 | [012-hand-history.md](012-hand-history.md) |
 | 013 | Phone-usable layout | backlog | low | 4 | [013-responsive-layout.md](013-responsive-layout.md) |
 
