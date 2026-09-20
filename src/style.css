@@ -1,3 +1,9 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   color: #e8e4d9;
   background: #163325;
@@ -14,6 +20,19 @@ body {
   max-width: 36rem;
   margin: 0 auto;
   padding: 2rem 1.25rem;
+}
+
+/* Phone-usable layout (feature 013): #app's fluid max-width and every
+   below rule's relative units/flex-wrap already avoid horizontal
+   scrolling down to a 375px viewport (verified with headless Chrome at
+   375x812 across guest/seated/hand/history states) — the one real gap
+   was touch-target size, addressed below. Tighten the outer gutter a
+   little further only on genuinely narrow screens, where the desktop
+   2rem top padding is more waste than the phone screen can spare. */
+@media (max-width: 480px) {
+  #app {
+    padding: 1.25rem 1rem;
+  }
 }
 
 h1 {
@@ -54,12 +73,14 @@ label {
 input {
   font: inherit;
   padding: 0.35rem 0.5rem;
+  min-height: 44px;
 }
 
 button {
   font: inherit;
   width: fit-content;
   padding: 0.35rem 0.8rem;
+  min-height: 44px;
   cursor: pointer;
 }
 
