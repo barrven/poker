@@ -1,7 +1,7 @@
 ---
 id: 005
 title: Deal a Hold'em hand
-status: validating
+status: accept
 priority: high
 iteration: 2
 ---
@@ -15,18 +15,18 @@ blinds.
 
 ## Acceptance Criteria
 
-- [ ] Each hand uses a standard 52-card deck that is shuffled before
+- [x] Each hand uses a standard 52-card deck that is shuffled before
       the deal. No duplicate cards appear among hole cards and board
       in the same hand.
-- [ ] A dealer button is assigned and visible. Small blind (1) and big
+- [x] A dealer button is assigned and visible. Small blind (1) and big
       blind (2) are posted automatically from the correct seats and
       deducted from those stacks before hole cards are dealt.
-- [ ] Each of the six seats is dealt two private hole cards.
-- [ ] Community cards come in the Hold'em sequence: flop (three), then
+- [x] Each of the six seats is dealt two private hole cards.
+- [x] Community cards come in the Hold'em sequence: flop (three), then
       turn (one), then river (one). Streets can be advanced by a test
       harness or by later betting completing a round; the engine must
       not deal the turn before the flop or the river before the turn.
-- [ ] The human's hole cards are available to the human client; other
+- [x] The human's hole cards are available to the human client; other
       seats' hole cards are not.
 
 ## Implementation Notes
@@ -145,7 +145,52 @@ removed the unused import rather than suppressing the rule.
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-19 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: pass (`npm run lint`)
+- typecheck: pass
+- build: pass
+- tests: pass (`npm test` — 44/44: 8 hand + 6 deal + 4 lint + 8 table +
+  7 auth + 5 tab + 6 scaffold)
+
+Validated a running instance of this tree on an isolated port (`:3011`)
+against a scratch SQLite file, with users `val005alice` / `val005bob`.
+
+1. **Pass (mechanically, `tests/hand.test.ts`).** A full hand dealt
+   through the river uses one shuffled 52-card deck; all 17 dealt cards
+   (12 hole + 5 board) are unique members of the standard deck. Not
+   re-verified live (would require repeated hands, which a single
+   session's "one hand in progress" rule doesn't allow — engine-level
+   coverage across many button positions in the test suite is the right
+   level for this).
+2. **Pass.** Live: `POST /api/hand/start` → `button: 0`, `smallBlindSeat:
+   1`, `bigBlindSeat: 2`; seat 1's stack 200→199, seat 2's 200→198,
+   confirming blinds were deducted from the correct seats' stacks before
+   hole cards were dealt (the response already includes the dealt hole
+   cards alongside the post-blind stacks — the deduction happens inside
+   the same `startHand()` call, and `tests/hand.test.ts` confirms
+   `blindsPosted` is computed correctly for all 6 possible button seats,
+   not just the live default of 0).
+3. **Pass.** Live response's `seats` array has 6 entries; `holeCards.length
+   === 2` for the human. All-six-seats-get-two-cards is asserted directly
+   in `tests/hand.test.ts` against `HandState.holeCards`.
+4. **Pass (mechanically).** `tests/hand.test.ts` deals flop→turn→river in
+   order (3, then +1, then +1 cards, each a prefix of the next) and
+   confirms `dealTurn`/`dealRiver` throw when called out of sequence.
+   Not reachable live yet by design — no advance-street endpoint exists
+   in this feature (AC4 explicitly permits a test harness here; live
+   advancement is feature 006).
+5. **Pass.** Live `POST /api/hand/start` and `GET /api/hand` responses
+   have exactly `{button, smallBlindSeat, bigBlindSeat, street, board,
+   holeCards, seats}` — `holeCards` is the human's own 2 cards; no key
+   anywhere carries another seat's hole cards. Also checked: double-start
+   → 409 without re-dealing; unseated → 400; logged-out → 401;
+   `GET /api/hand` before any hand started → 400 "no hand in progress".
+
+No new deviations beyond the ones already recorded in Implementation
+Notes (fixed human seat 0, fixed first-hand button 0, no street-advance
+API yet, no frontend card UI yet) — all deliberate and documented there.
 
 ## Acceptance Log
 

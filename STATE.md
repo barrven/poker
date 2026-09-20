@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 2
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 005-deal-hand
 - **Last updated:** 2026-09-19
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-19 — validated 005-deal-hand (pass); phase set to `accept`
 - 2026-09-19 — tested 005-deal-hand (14 new tests, 44/44 total); phase set to `validate`
 - 2026-09-19 — implemented 005-deal-hand (deck/hand engine, table.ts 6-seat model, /api/hand/start + /api/hand); phase set to `test`
 - 2026-09-19 — accepted 014-lint-setup (ESLint->Biome deviation acknowledged, spec wording fix deferred to next retro); active 005-deal-hand; phase set to `implement`
