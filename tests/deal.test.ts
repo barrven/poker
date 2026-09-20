@@ -127,6 +127,7 @@ test("a seated player can start a hand: dealer button visible, blinds posted fro
       street: string;
       board: string[];
       holeCards: string[];
+      actingSeat: number | null;
       seats: { index: number; kind: string; stack: number }[];
     };
 
@@ -138,27 +139,40 @@ test("a seated player can start a hand: dealer button visible, blinds posted fro
     // the response shape carries other seats' cards.
     assert.equal(view.holeCards.length, 2);
     assert.deepEqual(Object.keys(view).sort(), [
+      "actingSeat",
       "bigBlindSeat",
       "board",
       "button",
+      "currentBet",
       "holeCards",
+      "legalActions",
+      "minRaiseSize",
+      "pot",
+      "roundComplete",
       "seats",
       "smallBlindSeat",
       "street",
+      "toCall",
     ]);
 
     // Human is always seat 0 and is the button for a first hand, so blinds
-    // come from the two computer seats left of the button.
+    // come from the two computer seats left of the button (1, 2), and
+    // preflop action starts left of the big blind (seat 3). Feature 006's
+    // placeholder computer strategy (always check/call, see server/table.ts)
+    // auto-acts seats 3, 4, 5 before this response returns, landing back on
+    // the human (seat 0) — the button acts after early position, before the
+    // blinds close the action, same as a real 6-max preflop order.
     assert.equal(view.button, 0);
     assert.equal(view.smallBlindSeat, 1);
     assert.equal(view.bigBlindSeat, 2);
+    assert.equal(view.actingSeat, 0);
     assert.equal(view.seats.length, 6);
     assert.equal(view.seats[0].kind, "human");
     assert.equal(view.seats[0].stack, 200);
     assert.equal(view.seats[1].stack, 199);
     assert.equal(view.seats[2].stack, 198);
     for (const seat of view.seats.slice(3)) {
-      assert.equal(seat.stack, 200);
+      assert.equal(seat.stack, 198);
     }
   } finally {
     await app.close();
