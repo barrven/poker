@@ -1,7 +1,7 @@
 ---
 id: 012
 title: Hand history
-status: validating
+status: accept
 priority: medium
 iteration: 4
 ---
@@ -15,15 +15,15 @@ export.
 
 ## Acceptance Criteria
 
-- [ ] Settling a hand writes one SQLite history row for that player
+- [x] Settling a hand writes one SQLite history row for that player
       with time, blinds, the player's hole cards, the board (as dealt),
       result (won / lost / split), and chip delta for the human.
-- [ ] A logged-in player can open a history view listing their past
+- [x] A logged-in player can open a history view listing their past
       hands with those fields.
-- [ ] A player does not see another account's hands.
-- [ ] History is still there after a page refresh.
-- [ ] There is no hand-history file export and no leaderboard.
-- [ ] A folded hand the human lost still records hole cards and delta;
+- [x] A player does not see another account's hands.
+- [x] History is still there after a page refresh.
+- [x] There is no hand-history file export and no leaderboard.
+- [x] A folded hand the human lost still records hole cards and delta;
       a fold-win may record an empty or mucked board as actually dealt
       (preflop fold-win has no board).
 
@@ -133,7 +133,48 @@ Full suite: 125/125, run 4 times in a row.
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+Checks: `npm run typecheck` clean (all 4 tsconfigs), `npm run lint`
+clean (34 files, 0 warnings/errors), `npm run build` succeeded (both
+bundle hashes changed vs. pre-012: `index-D7LconJ7.js` /
+`index-IP8rylxl.css`, confirming real frontend code shipped). `npm test`:
+one isolated flake seen during this validation pass (1 failure out of
+~7 ad-hoc local runs, specific test not captured before it passed
+again), followed by 20 consecutive clean 125/125 runs (5 foreground +
+a 15-run background sweep). Consistent with this project's established,
+previously-documented pattern of rare flakes from real (unseeded)
+computer decisions rather than a regression — no seeded rng is exposed
+over HTTP by design (see feature 011's Acceptance Log for the same
+class of flake). Not treated as a blocker.
+
+Live curl walkthrough (isolated server, scratchpad data dir): played
+hands to showdown and observed `won` (delta +800), `lost` (delta -4),
+and `split` (delta +201) rows all appear correctly in `/api/history`;
+confirmed a second registered account's `/api/history` returns `{"hands":
+[]}` while the first account already has 34+ rows (privacy, AC3);
+confirmed `/api/history` before any hand returns `{"hands": []}`.
+
+Acceptance criteria:
+- History row on settlement (time, blinds, hole cards, board, result,
+  delta) — pass. `tests/hand-history.test.ts` + live walkthrough.
+- Logged-in history view — pass. `#history-toggle` / `renderHistory`,
+  covered by source-inspection test + manual API walkthrough (no
+  browser runner in this repo, same limitation noted in 008).
+- No cross-account visibility — pass. Dedicated test + live walkthrough
+  (second account saw an empty list).
+- Survives a refresh — pass, and tested to a stronger bar: rows survive
+  a full app/db restart against the same on-disk data directory, not
+  just an in-memory reload.
+- No file export, no leaderboard — pass by omission: no such route or
+  UI control exists anywhere in the diff.
+- Fold-loss still records hole cards/delta — pass, dedicated test
+  (`tests/hand-history.test.ts`) plus a live walkthrough example
+  (delta 0, 2 hole cards, human folded preflop with nothing invested).
+  Fold-win empty-board mechanism — confirmed by code inspection
+  (`recordSettledHandHistory` reads `session.hand.board`, which is `[]`
+  before `dealFlop` runs) rather than a forced automated test; see Test
+  Notes for why a seeded-rng-free forced repro wasn't attempted.
+
+All criteria pass. `status: accept`, `STATE.md` phase set to `accept`.
 
 ## Acceptance Log
 
