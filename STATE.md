@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 2
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 006-betting
 - **Last updated:** 2026-09-19
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-19 — validated 006-betting (pass); phase set to `accept`
 - 2026-09-19 — implemented + tested 006-betting (betting engine, placeholder computer strategy, action UI, 27 new tests, 74/74 total); phase set to `validate`
 - 2026-09-19 — accepted 005-deal-hand; active 006-betting; phase set to `implement`
 - 2026-09-19 — re-validated 005-deal-hand after UI fix (pass); phase set to `accept`

@@ -1,7 +1,7 @@
 ---
 id: 006
 title: Betting rounds and legal actions
-status: validating
+status: accept
 priority: high
 iteration: 2
 ---
@@ -15,23 +15,23 @@ Folded and all-in players are skipped.
 
 ## Acceptance Criteria
 
-- [ ] Preflop action starts with the seat left of the big blind.
+- [x] Preflop action starts with the seat left of the big blind.
       Postflop action starts with the seat left of the button.
-- [ ] Folded players and players who are all-in are skipped for further
+- [x] Folded players and players who are all-in are skipped for further
       action in that hand.
-- [ ] When it is the human's turn, only legal actions are offered:
+- [x] When it is the human's turn, only legal actions are offered:
       fold; check if no bet to them; call if there is a bet they can
       match (or all-in for less); bet if no bet to them and they have
       chips; raise if there is a bet and they have room for a legal
       raise; all-in always when they have a remaining stack and action
       is on them (except they may also fold).
-- [ ] Bet and raise amounts respect remaining stacks and minimum-raise
+- [x] Bet and raise amounts respect remaining stacks and minimum-raise
       rules (raise must be at least the size of the last full raise,
       unless the player is going all-in for less).
-- [ ] An illegal action (check into a bet, raise below minimum without
+- [x] An illegal action (check into a bet, raise below minimum without
       being all-in, acting out of turn) is rejected and does not change
       stacks or the pot.
-- [ ] Chips moved as bets are added to the pot (or to the current
+- [x] Chips moved as bets are added to the pot (or to the current
       street's contribution so later pot math can run).
 
 ## Implementation Notes
@@ -187,7 +187,58 @@ Notes).
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-19 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: pass
+- typecheck: pass
+- build: pass
+- tests: pass (`npm test` — 74/74: 17 betting + 10 action + 8 hand +
+  9 deal + 4 lint + 8 table + 7 auth + 5 tab + 6 scaffold)
+
+Live walkthrough already done during `/implement` (see Test Notes) on an
+isolated instance: dealt a hand, raised to 8 via `/api/hand/action`,
+watched the placeholder computers auto-complete the round; confirmed
+`data-action` and `/api/hand/action` are both present in the built
+`dist/client/assets/*.js`, not just dev source — the specific class of
+gap 005's `/accept` feedback caught, checked again here so it doesn't
+recur.
+
+1. **Pass.** `startHand()` computes `startingSeat = (bigBlindSeat + 1) %
+   SEAT_COUNT` for preflop (`tests/betting.test.ts`: "preflop action
+   starts left of the big blind"; live: `actingSeat` lands on seat 3 = BB
+   seat 2 + 1, matching). Postflop start-left-of-button verified directly
+   against `startBettingRound` (engine-level only, same precedent as
+   005's street-dealing functions — no live postflop round exists yet,
+   correctly, since street advance is feature 007).
+2. **Pass.** `nextActingSeat` skips folded/all-in seats
+   (`tests/betting.test.ts`: fold two, shove a third, confirm the next
+   actor is the button, then confirm folded/all-in seats stay skipped on
+   the following turn too).
+3. **Pass.** `legalActions` matches AC3's four cases exactly, tested for
+   each (`tests/betting.test.ts`, 4 tests) and live (`tests/action.test.ts`:
+   the human's first decision offers exactly `{fold, call, raise,
+   all-in}`, no check/bet, facing the big blind).
+4. **Pass.** Bet/raise validated against `minRaiseSize` and the seat's
+   stack; a short all-in is exempted from the minimum per AC4's own
+   wording ("unless the player is going all-in for less") — 5 dedicated
+   tests plus a live raise-to-8 walkthrough.
+5. **Pass.** Illegal actions (check facing a bet, under-minimum raise,
+   out-of-turn) are rejected with the state provably unchanged
+   (`JSON.stringify` snapshot `deepEqual`'d before/after in
+   `tests/betting.test.ts`; live: a rejected check leaves `pot`/
+   `actingSeat` exactly as they were, confirmed via a follow-up
+   `GET /api/hand`).
+6. **Pass.** Chips move into `pot` and each seat's `streetContribution`/
+   `totalContribution` on every legal bet/call/raise/all-in — direct
+   assertions in both test files and the live walkthrough's pot totals
+   (12 after a plain call round, 36 after a raise-to-6 round, 48 after
+   raise-to-8).
+
+No new deviations beyond what's already recorded in Implementation Notes
+(the placeholder computer strategy, the short-all-in reopening
+simplification, and the postflop/street-advance/showdown scope boundary
+carried from feature 005) — all deliberate and documented there.
 
 ## Acceptance Log
 
