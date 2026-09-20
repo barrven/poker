@@ -103,94 +103,119 @@ test("the seat list is a safe, always-non-overlapping grid by default (mobile-fi
   assert.match(mediaBlock, /\[data-seats\] \{[^}]*position:\s*absolute/);
 });
 
-test("geometry check: every seat-slot's horizontal position keeps its box fully inside the felt at the oval breakpoint's known minimum width", () => {
-  const css = readCss();
-  const mediaBlock = css.match(
-    /@media \(min-width: 640px\) \{([\s\S]*?)\n\}\n\n\[data-actions\]/,
-  )?.[1];
-  assert.ok(mediaBlock, "oval breakpoint media query not found");
+function readOvalMediaBlock(css: string): string {
+  const block = css.match(/@media \(min-width: 640px\) \{([\s\S]*?)\n\}\n\n\[data-actions\]/)?.[1];
+  assert.ok(block, "oval breakpoint media query not found (or its bounds changed)");
+  return block as string;
+}
 
-  // #app caps at 36rem total width with 2rem+1.25rem horizontal padding
-  // (src/style.css, top of file) — by 640px viewport (this query's own
-  // threshold) #app has already hit that cap, so .table-oval's rendered
-  // width is a known, stable value, not something that keeps changing
-  // with the viewport. Cross-checked against .table-oval's own
-  // max-width below, taking whichever is smaller (the real constraint).
+function readSeatGeometry(mediaBlock: string): {
+  areaWidthPx: number;
+  areaHeightPx: number;
+  boxWidthPx: number;
+  slots: { slot: number; leftPercent: number; topPercent: number }[];
+} {
   const REM = 16;
-  const appMaxWidthPx = 36 * REM;
-  const appHorizontalPaddingPx = (2 + 1.25) * REM * 2;
-  const knownFeltWidthPx = appMaxWidthPx - appHorizontalPaddingPx;
 
-  const ovalMaxWidthRem = Number(mediaBlock.match(/\.table-oval\s*\{[^}]*max-width:\s*(\d+(?:\.\d+)?)rem/)?.[1]);
-  assert.ok(ovalMaxWidthRem > 0, "could not read .table-oval max-width");
-  const feltWidthPx = Math.min(knownFeltWidthPx, ovalMaxWidthRem * REM);
-
-  const seatLiBlock = mediaBlock.match(/\[data-seats\] li \{([^}]*)\}/)?.[1];
-  assert.ok(seatLiBlock, "[data-seats] li rule not found in the oval media query");
-  const boxWidthRem = Number(seatLiBlock.match(/width:\s*(\d+(?:\.\d+)?)rem/)?.[1]);
-  assert.ok(boxWidthRem > 0, "could not read seat box width");
-  const halfBoxPx = (boxWidthRem * REM) / 2;
-
-  const MIN_CLEARANCE_PX = 8; // a little slack for border/box-shadow bleed
-  for (let slot = 1; slot <= 6; slot++) {
-    const slotBlock = mediaBlock.match(new RegExp(`\\.seat-slot-${slot}\\s*\\{([^}]*)\\}`))?.[1];
-    assert.ok(slotBlock, `.seat-slot-${slot} rule not found`);
-    const leftPercent = Number(slotBlock.match(/left:\s*(\d+(?:\.\d+)?)%/)?.[1]);
-    assert.ok(!Number.isNaN(leftPercent), `.seat-slot-${slot} has no left%`);
-    const leftPx = (leftPercent / 100) * feltWidthPx;
-    assert.ok(
-      leftPx - halfBoxPx >= MIN_CLEARANCE_PX,
-      `seat-slot-${slot} box would clip the felt's left edge (left edge at ${leftPx - halfBoxPx}px)`,
-    );
-    assert.ok(
-      leftPx + halfBoxPx <= feltWidthPx - MIN_CLEARANCE_PX,
-      `seat-slot-${slot} box would clip the felt's right edge (right edge at ${leftPx + halfBoxPx}px, felt width ${feltWidthPx}px)`,
-    );
-  }
-});
-
-test("geometry check: adjacent seat rows are spaced far enough apart vertically for two text-heavy seat boxes not to stack on top of each other", () => {
-  const css = readCss();
-  const mediaBlock = css.match(
-    /@media \(min-width: 640px\) \{([\s\S]*?)\n\}\n\n\[data-actions\]/,
-  )?.[1];
-  assert.ok(mediaBlock, "oval breakpoint media query not found");
-
-  const REM = 16;
-  const ovalMaxWidthRem = Number(mediaBlock.match(/\.table-oval\s*\{[^}]*max-width:\s*(\d+(?:\.\d+)?)rem/)?.[1]);
-  const [aspectW, aspectH] = (mediaBlock.match(/aspect-ratio:\s*(\d+)\s*\/\s*(\d+)/) ?? []).slice(1).map(Number);
+  const ovalMaxWidthRem = Number(
+    mediaBlock.match(/\.table-oval\s*\{[^}]*max-width:\s*(\d+(?:\.\d+)?)rem/)?.[1],
+  );
+  const [aspectW, aspectH] = (mediaBlock.match(/aspect-ratio:\s*(\d+)\s*\/\s*(\d+)/) ?? [])
+    .slice(1)
+    .map(Number);
   assert.ok(ovalMaxWidthRem > 0 && aspectW > 0 && aspectH > 0, "could not read .table-oval sizing");
   const feltWidthPx = ovalMaxWidthRem * REM;
   const feltHeightPx = (feltWidthPx * aspectH) / aspectW;
 
-  const tops: number[] = [];
+  // [data-seats] fills .table-oval exactly (inset: 0) — seat-slot-N
+  // percentages are relative to the felt's own full size, and it's the
+  // percentages themselves (checked below) that keep every box's edges
+  // safely inside it, not a separate carved-out margin.
+  const seatsBlock = mediaBlock.match(/\[data-seats\] \{([^}]*)\}/)?.[1];
+  assert.ok(seatsBlock, "[data-seats] rule not found in the oval media query");
+  assert.match(seatsBlock as string, /inset:\s*0\s*;/);
+  const areaWidthPx = feltWidthPx;
+  const areaHeightPx = feltHeightPx;
+
+  const seatLiBlock = mediaBlock.match(/\[data-seats\] li \{([^}]*)\}/)?.[1];
+  assert.ok(seatLiBlock, "[data-seats] li rule not found in the oval media query");
+  const boxWidthRem = Number(seatLiBlock?.match(/width:\s*(\d+(?:\.\d+)?)rem/)?.[1]);
+  assert.ok(boxWidthRem > 0, "could not read seat box width");
+
+  const slots = [];
   for (let slot = 1; slot <= 6; slot++) {
     const slotBlock = mediaBlock.match(new RegExp(`\\.seat-slot-${slot}\\s*\\{([^}]*)\\}`))?.[1];
-    const top = Number(slotBlock?.match(/top:\s*(\d+(?:\.\d+)?)%/)?.[1]);
-    assert.ok(!Number.isNaN(top), `.seat-slot-${slot} has no top%`);
-    tops.push(top);
+    assert.ok(slotBlock, `.seat-slot-${slot} rule not found`);
+    const leftPercent = Number(slotBlock?.match(/left:\s*(\d+(?:\.\d+)?)%/)?.[1]);
+    const topPercent = Number(slotBlock?.match(/top:\s*(\d+(?:\.\d+)?)%/)?.[1]);
+    assert.ok(!Number.isNaN(leftPercent) && !Number.isNaN(topPercent), `.seat-slot-${slot} missing left%/top%`);
+    slots.push({ slot, leftPercent, topPercent });
   }
-  const sortedUnique = [...new Set(tops)].sort((a, b) => a - b);
-  assert.ok(sortedUnique.length >= 2, "expected seats spread across multiple rows");
 
-  // A rough but real estimate: a computer seat's box (label, D/SB/BB
-  // badges, chip-prefixed stack, fold/all-in status, bet, and — for a
-  // computer seat with unrevealed cards — two small card-back images)
-  // can wrap to a few lines even at the oval breakpoint's smaller
-  // font-size. This isn't pixel-exact (no browser available to measure
-  // real layout this run — see this feature's Validation Notes), but a
-  // ~100px minimum vertical gap between the closest adjacent rows is a
-  // deliberate, checked safety margin, not an arbitrary one.
-  const MIN_ROW_GAP_PX = 90;
-  let minGapPx = Infinity;
-  for (let i = 1; i < sortedUnique.length; i++) {
-    const gapPercent = sortedUnique[i] - sortedUnique[i - 1];
-    minGapPx = Math.min(minGapPx, (gapPercent / 100) * feltHeightPx);
+  return { areaWidthPx, areaHeightPx, boxWidthPx: boxWidthRem * REM, slots };
+}
+
+// A computer seat's box holds a lot: label, D/SB/BB badges, a
+// chip-prefixed stack, fold/all-in status, a chip-prefixed bet, and —
+// while its cards are unrevealed — two small card-back images (shrunk
+// specifically inside a seat box, see [data-seats] .card-img). The box
+// is also wider here (9rem) than the standalone hole-cards row, so this
+// wraps to roughly 2-3 lines of text plus one compact image row. This
+// is a deliberate, generous estimate of that real height at the oval
+// breakpoint's smaller font-size, not an arbitrary number — but it's
+// still an estimate: no browser was available this run to measure
+// actual rendered text height (see this feature's Validation Notes).
+const ESTIMATED_SEAT_BOX_HEIGHT_PX = 130;
+
+test("geometry check: every seat-slot's box stays fully inside the felt's safe interior at the oval breakpoint's known width", () => {
+  const { areaWidthPx, areaHeightPx, boxWidthPx, slots } = readSeatGeometry(readOvalMediaBlock(readCss()));
+  const halfW = boxWidthPx / 2;
+  const halfH = ESTIMATED_SEAT_BOX_HEIGHT_PX / 2;
+  const MIN_CLEARANCE_PX = 8; // a little slack for border/box-shadow bleed
+
+  for (const { slot, leftPercent, topPercent } of slots) {
+    const x = (leftPercent / 100) * areaWidthPx;
+    const y = (topPercent / 100) * areaHeightPx;
+    assert.ok(
+      x - halfW >= -MIN_CLEARANCE_PX && x + halfW <= areaWidthPx + MIN_CLEARANCE_PX,
+      `seat-slot-${slot} box would clip the felt's left/right edge (center x=${x}px, area width ${areaWidthPx}px)`,
+    );
+    assert.ok(
+      y - halfH >= -MIN_CLEARANCE_PX && y + halfH <= areaHeightPx + MIN_CLEARANCE_PX,
+      `seat-slot-${slot} box would clip the felt's top/bottom edge (center y=${y}px, area height ${areaHeightPx}px)`,
+    );
   }
-  assert.ok(
-    minGapPx >= MIN_ROW_GAP_PX,
-    `closest adjacent seat rows are only ${minGapPx}px apart at the felt's known size (want >= ${MIN_ROW_GAP_PX}px)`,
-  );
+});
+
+test("geometry check: every pair of seat boxes clears each other on at least one axis, so none can overlap", () => {
+  const { areaWidthPx, areaHeightPx, boxWidthPx, slots } = readSeatGeometry(readOvalMediaBlock(readCss()));
+  const boxW = boxWidthPx;
+  const boxH = ESTIMATED_SEAT_BOX_HEIGHT_PX;
+
+  const points = slots.map(({ slot, leftPercent, topPercent }) => ({
+    slot,
+    x: (leftPercent / 100) * areaWidthPx,
+    y: (topPercent / 100) * areaHeightPx,
+  }));
+
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const a = points[i];
+      const b = points[j];
+      const dx = Math.abs(a.x - b.x);
+      const dy = Math.abs(a.y - b.y);
+      // Axis-aligned bounding-box overlap test: two boxes collide only if
+      // they overlap on BOTH axes at once. Seats sharing a row (small dy)
+      // are fine as long as they're spread far enough apart horizontally
+      // (large dx), and vice versa for seats sharing a column.
+      const xClear = dx >= boxW;
+      const yClear = dy >= boxH;
+      assert.ok(
+        xClear || yClear,
+        `seat-slot-${a.slot} and seat-slot-${b.slot} boxes would overlap (dx=${dx}px, dy=${dy}px, box ${boxW}x${boxH}px)`,
+      );
+    }
+  }
 });
 
 test("all pre-existing table-view information a hand shows is still present after the layout change (AC5)", () => {

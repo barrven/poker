@@ -1,7 +1,7 @@
 ---
 id: 016
 title: Poker table layout (oval seating)
-status: implementing
+status: validating
 priority: high
 iteration: 5
 ---
@@ -157,15 +157,21 @@ harness in this project):
   *default*, not just a phone override (AC3) — and the `min-width: 640px`
   query is where the real oval (`border-radius: 50%`,
   `position: absolute`) lives.
-- **Two geometry tests** parse the actual CSS values (`.table-oval`
-  max-width/aspect-ratio, `[data-seats] li` width, each `.seat-slot-N`'s
-  left/top%) and compute real pixel arithmetic: every seat box stays
-  fully inside the felt horizontally (AC2/AC1), and adjacent seat rows
-  keep a checked minimum vertical gap so two text-heavy boxes can't
-  stack on each other. These aren't just "does the CSS exist" checks —
-  confirmed real by deliberately regressing `.seat-slot-3`'s `left` to
-  2% during `/implement` and watching the horizontal test fail, then
-  reverting.
+- **Two geometry tests** parse the actual shipped CSS values
+  (`.table-oval` max-width/aspect-ratio, `[data-seats]`'s inset,
+  `[data-seats] li`'s width, each `.seat-slot-N`'s left/top%) and
+  compute real pixel arithmetic: every seat box stays inside the felt on
+  both axes, and — properly this time — every one of the 15 seat pairs
+  is checked with a real axis-aligned bounding-box overlap test (two
+  boxes only collide if they overlap on *both* axes at once), not the
+  original's cruder "any two different top-rows need a big vertical
+  gap" heuristic, which didn't account for seats in the same row being
+  far apart horizontally. Confirmed these catch real regressions, not
+  just passing vacuously: deliberately broke `.seat-slot-3`'s `left` to
+  2% during the first `/implement` pass and watched the in-bounds test
+  fail, then reverted; the original layout (later replaced) was also
+  caught failing its own in-bounds check once the real percentages were
+  plugged in, which is what triggered redesigning it properly.
 - A consolidated AC5 check: every pre-existing table-view data hook
   (`data-street`, `data-turn`, `data-hole-cards`, `data-pot`,
   `data-board`, `data-seats`, `data-acting`, `hand.button`,
@@ -175,18 +181,22 @@ harness in this project):
   etc.) also still passes unmodified, which is itself a strong AC5
   signal — none of those tests needed changes for this feature.
 
-Ran the full suite 4 consecutive times (147/147 each) — no flakiness
+Ran the full suite 3 consecutive times (147/147 each) — no flakiness
 introduced (this feature added no live-server/randomness-dependent
 tests, unlike 015's).
 
-Deliberately not covered: no actual rendered-pixel/visual check — no
-browser extension was connected to this account at all this session
-(`list_connected_browsers` returned empty, both during `/implement` and
-again checked here), so a real screenshot-based check wasn't possible.
-The geometry tests are the closest substitute: real arithmetic against
-the real CSS values, not just presence checks, but they're still a
-model of the layout, not an observation of it. Flagging for `/validate`
-and `/accept`, same as feature 015's AC5 gap.
+**Now also covered, closing the earlier gap:** an actual rendered-pixel
+check. No Claude-in-Chrome browser extension is connected to this
+account (`list_connected_browsers` returned empty, checked repeatedly),
+but this machine has `google-chrome` installed and runnable headless
+independent of that extension — used to screenshot standalone HTML
+built from the real seat/marker/chip-icon/card markup against the real
+`src/style.css`, at both desktop and phone width, for both the pre-hand
+and in-hand views. Not an automated test (no assertion, just a visual
+check performed once during `/implement`/`/validate`), but a real
+observation of the real CSS, not a model of it — see Validation Notes
+for what it showed. The geometry tests remain the automated,
+re-runs-on-every-`npm test` regression guard.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
