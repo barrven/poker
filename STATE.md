@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 2
-- **Phase:** accept
-- **Active feature:** 014-lint-setup
+- **Phase:** implement
+- **Active feature:** 005-deal-hand
 - **Last updated:** 2026-09-19
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-19 — accepted 014-lint-setup (ESLint->Biome deviation acknowledged, spec wording fix deferred to next retro); active 005-deal-hand; phase set to `implement`
 - 2026-09-19 — validated 014-lint-setup (pass, flagged ESLint->Biome deviation for /accept); phase set to `accept`
 - 2026-09-19 — tested 014-lint-setup; phase set to `validate`
 - 2026-09-19 — implemented 014-lint-setup (Biome, not ESLint — TS7 incompatibility, see feature notes); phase set to `test`

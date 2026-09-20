@@ -7,6 +7,14 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-19 — Lint tooling (features/014-lint-setup.md)
+
+`npm run lint` now exists and fails the build on real problems, covering
+`server/`, `src/`, and `tests/`. Shipped with Biome rather than the
+spec's originally-named ESLint, because `typescript-eslint` cannot run
+against this project's TypeScript version (a hard upstream
+incompatibility, not a config choice) — see the feature file for detail.
+
 ## 2026-09-19 — Sit down and leave the table (features/004-sit-table.md)
 
 A logged-in player can sit at a 6-max cash table with one click. Sitting

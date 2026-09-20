@@ -1,7 +1,7 @@
 ---
 id: 014
 title: Lint tooling
-status: accept
+status: done
 priority: high
 iteration: 2
 ---
@@ -168,4 +168,8 @@ mid-validate.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-19 — Accepted. User selected "Accept and continue" in response to
+the acceptance summary, including the flagged ESLint→Biome deviation
+(hard TS7 incompatibility in typescript-eslint). Spec wording fix
+("ESLint" → "a linter") deferred to the next `/retro`, per the user's
+choice. Moving on to 005-deal-hand.
