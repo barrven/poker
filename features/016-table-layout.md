@@ -1,7 +1,7 @@
 ---
 id: 016
 title: Poker table layout (oval seating)
-status: validating
+status: accept
 priority: high
 iteration: 5
 ---
@@ -19,16 +19,16 @@ Purely visual: no change to table logic, action rules, or data shown.
 ## Acceptance Criteria
 _Testable, checkable statements. `/validate` and `/accept` check against these directly._
 
-- [ ] The 6 seats (human + 5 computer opponents) are positioned around
+- [x] The 6 seats (human + 5 computer opponents) are positioned around
       an oval/circular table shape, not stacked vertically in a column.
-- [ ] Seat positions are readable and non-overlapping on a desktop
+- [x] Seat positions are readable and non-overlapping on a desktop
       viewport.
-- [ ] Seat positions remain usable and non-overlapping on a phone-width
+- [x] Seat positions remain usable and non-overlapping on a phone-width
       viewport (the shape may adapt, but nothing clips or overlaps),
       consistent with requirement 19.
-- [ ] The dealer button, pot, and stack/bet indicators use recognizable
+- [x] The dealer button, pot, and stack/bet indicators use recognizable
       poker iconography or styled markers, not bare unstyled text alone.
-- [ ] All existing table-view information (hole cards, board, stacks,
+- [x] All existing table-view information (hole cards, board, stacks,
       pot, dealer button, blinds, whose turn it is, acting-seat
       highlight, action log) remains present and correct after the
       layout change.
@@ -144,6 +144,78 @@ and `/accept`, same as feature 015's AC5 gap.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+
+**Tooling:** `typecheck` clean (all 4 tsconfigs), `lint` clean (biome, 37
+files — CSS included), `build` clean (`vite build` + server `tsc`).
+Confirmed the new CSS actually ships: grepped the built
+`dist/client/assets/*.css` and found all 6 `seat-slot-N` classes,
+`table-oval`, `marker-badge`/`marker-button`/`marker-sb`/`marker-bb`,
+and `chip-icon` present. Full test suite: 147/147, run 5 consecutive
+times with no flakes.
+
+**Live checks (curl against the real API + dev server):** confirmed the
+dev server actually serves the updated `src/style.css` with every new
+selector present (not just what's on disk). Started a real hand and
+confirmed `seats` comes back index-ordered 0 (human) through 5
+(computer) — the exact assumption `seat.index + 1 → seat-slot-N` in
+`src/main.ts` depends on; this was already true before this feature
+(re-verified, not changed by it).
+
+No headless-Chrome/browser visual check was possible this run —
+`list_connected_browsers` returned empty both during `/test` and again
+here, i.e. no browser extension is connected to this account at all,
+not a flaky single failure. In its place, relying on: (1) the two
+geometry tests in `tests/table-layout.test.ts`, which compute real
+pixel arithmetic from the actual shipped CSS values (not just "does the
+rule exist") and were confirmed to catch a real regression during
+`/implement`; (2) the mobile-first design itself — the *default*
+(no-media-query) seat layout is the same safe two-column grid this
+project's phone breakpoint has used since feature 013 (already
+validated with real headless Chrome at 375px back then), so phone width
+never touches the new, unverified-by-eye oval math at all; only
+viewports ≥640px do. This is a reasoned-through pass, not an observed
+one for the ≥640px oval case specifically — flagging for `/accept`,
+same as feature 015's AC5 gap. Recommend a human eyeball the oval at a
+real desktop width when a browser is next available.
+
+Per-criterion:
+1. **Pass.** Every seat `<li>` in both `renderTable` and `renderHand`
+   carries a `seat-slot-{1..6}` class; at ≥640px that class positions it
+   absolutely around an ellipse (`border-radius: 50%`,
+   `aspect-ratio: 4/5`) instead of a vertical list.
+2. **Pass, by computed geometry (see above) — not independently
+   observed in a browser this run.** The horizontal geometry test
+   confirms every seat box's left/right edges stay inside the felt at
+   the breakpoint's known stable width (with an 8px safety buffer); the
+   vertical one confirms adjacent rows keep ≥90px of gap at that same
+   width — both computed from the actual shipped CSS values, not
+   eyeballed.
+3. **Pass.** Below 640px (phone included) `[data-seats]` is a plain
+   `display: grid` two-column layout with no absolute positioning —
+   the same mechanism feature 013 already validated with real headless
+   Chrome at 375px, just reused here rather than re-invented. AC3's own
+   wording explicitly allows the shape to adapt at phone width.
+4. **Pass.** Dealer/SB/BB are now `.marker-badge` circular badges
+   (border-radius: 50%, distinct colors per marker); stack, bet, and
+   pot amounts are all prefixed with `.chip-icon`, a CSS-only striped
+   circle (`repeating-conic-gradient`) — no bare numbers or
+   parenthetical text remain for any of these three.
+5. **Pass.** Every pre-existing data hook renderHand exposed before
+   this feature (`data-street`, `data-turn`, `data-hole-cards`,
+   `data-pot`, `data-board`, `data-seats`, `data-acting`, `hand.button`,
+   `hand.smallBlindSeat`, `hand.bigBlindSeat`, the action-log call,
+   `id="leave"`) is still present — checked explicitly in
+   `tests/table-layout.test.ts`, and confirmed implicitly by every
+   pre-existing test (deal.test.ts, action-log.test.ts, showdown.test.ts,
+   tab.test.ts, rebuy-topup.test.ts, hand-history.test.ts, auth.test.ts,
+   scaffold.test.ts — all of which read `src/main.ts`'s source and check
+   these same hooks) passing unmodified.
+
+**Outcome: all 5 acceptance criteria pass** (AC2 by computed geometry
+rather than an observed screenshot — flagging for `/accept` alongside
+015's carried-over AC5 gap, both stemming from the same root cause: no
+browser extension connected to this account this session). No
+bounce-back needed.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
