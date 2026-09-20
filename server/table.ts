@@ -13,6 +13,7 @@ import { dealFlop, dealHand, dealRiver, dealTurn } from "./poker/hand.js";
 import type { HandState } from "./poker/hand.js";
 import { categoryName, evaluateBestHand } from "./poker/rank.js";
 import { awardPotWithoutShowdown, awardPotsAtShowdown } from "./poker/settle.js";
+import { classifyHandResult, recordHandHistory } from "./history.js";
 
 export const BUY_IN = 200;
 export const SMALL_BLIND = 1;
@@ -351,6 +352,28 @@ function syncHumanTab(db: DatabaseSync, userId: number, session: TableSession): 
   setTab(db, userId, tabOf(db, userId) + delta);
 }
 
+// Writes one hand-history row for the human (feature 012) once
+// `session.result` is final. `handStartStack` was captured before this
+// hand's blinds were posted, so the diff against the human's current
+// stack is exactly this hand's net effect on the table (same delta
+// `syncHumanTab` folds into the running tab).
+function recordSettledHandHistory(db: DatabaseSync, userId: number, session: TableSession): void {
+  const hand = session.hand;
+  const result = session.result;
+  if (!hand || !result) {
+    return;
+  }
+  const delta = session.seats[HUMAN_SEAT].stack - session.handStartStack;
+  recordHandHistory(db, userId, {
+    smallBlind: SMALL_BLIND,
+    bigBlind: BIG_BLIND,
+    holeCards: hand.holeCards[HUMAN_SEAT],
+    board: hand.board,
+    result: classifyHandResult(result.winners, HUMAN_SEAT),
+    delta,
+  });
+}
+
 function settleWithoutShowdown(db: DatabaseSync, userId: number, session: TableSession): void {
   const betting = session.betting;
   if (!betting) {
@@ -372,6 +395,7 @@ function settleWithoutShowdown(db: DatabaseSync, userId: number, session: TableS
     winners: results.map((r) => ({ seat: r.seat, delta: r.delta })),
   };
   syncHumanTab(db, userId, session);
+  recordSettledHandHistory(db, userId, session);
 }
 
 function settleAtShowdown(db: DatabaseSync, userId: number, session: TableSession): void {
@@ -403,6 +427,7 @@ function settleAtShowdown(db: DatabaseSync, userId: number, session: TableSessio
     })),
   };
   syncHumanTab(db, userId, session);
+  recordSettledHandHistory(db, userId, session);
 }
 
 // Drives the hand forward after any action changes who's on the clock:

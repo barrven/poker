@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 
 export const defaultDataDir = path.resolve(process.cwd(), "data");
 export const sqliteFileName = "poker.sqlite";
-export const schemaVersion = "3";
+export const schemaVersion = "4";
 export const STARTING_TAB = 1000;
 
 export function sqlitePath(dataDir = defaultDataDir): string {
@@ -32,6 +32,18 @@ export function openDb(dataDir = defaultDataDir): DatabaseSync {
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS hand_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      played_at TEXT NOT NULL DEFAULT (datetime('now')),
+      small_blind INTEGER NOT NULL,
+      big_blind INTEGER NOT NULL,
+      hole_cards TEXT NOT NULL,
+      board TEXT NOT NULL,
+      result TEXT NOT NULL,
+      delta INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS hand_history_user_id_idx ON hand_history(user_id, id);
   `);
   ensureUsersTabColumn(db);
   db.prepare(

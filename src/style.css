@@ -150,3 +150,21 @@ button {
   gap: 0.2rem;
   font-family: "Courier New", monospace;
 }
+
+/* Hand history (feature 012): same structural, unthemed treatment as the
+   table view above. */
+
+[data-history-list] {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+[data-history-row] {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #2c5a3e;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+}

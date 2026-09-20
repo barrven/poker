@@ -14,6 +14,7 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { pingDb } from "./db.js";
+import { listHandHistory } from "./history.js";
 import type { Action } from "./poker/betting.js";
 import {
   currentHand,
@@ -382,6 +383,16 @@ async function handle(
       return;
     }
     sendJson(res, 200, userPayload(db, { ...user, tab: result.tab }));
+    return;
+  }
+
+  if (method === "GET" && pathOnly === "/api/history") {
+    const user = currentUser(db, req);
+    if (!user) {
+      sendJson(res, 401, { error: "Authentication required" });
+      return;
+    }
+    sendJson(res, 200, { hands: listHandHistory(db, user.id) });
     return;
   }
 

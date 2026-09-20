@@ -60,6 +60,17 @@ type HandView = {
   actionLog: ActionLogEntry[];
 };
 
+type HandHistoryEntry = {
+  id: number;
+  playedAt: string;
+  smallBlind: number;
+  bigBlind: number;
+  holeCards: string[];
+  board: string[];
+  result: "won" | "lost" | "split";
+  delta: number;
+};
+
 type View =
   | { kind: "loading" }
   | { kind: "guest"; error: string }
@@ -71,6 +82,8 @@ type View =
       stack: number;
       hand: HandView | undefined;
       error: string;
+      historyOpen: boolean;
+      history: HandHistoryEntry[] | undefined;
     };
 
 let view: View = { kind: "loading" };
@@ -231,6 +244,51 @@ async function fetchCurrentHand(): Promise<HandView | undefined> {
   return parseHandView(await response.json());
 }
 
+const HAND_RESULTS = new Set(["won", "lost", "split"]);
+
+function parseHandHistory(body: unknown): HandHistoryEntry[] | undefined {
+  if (typeof body !== "object" || body === null || !("hands" in body) || !Array.isArray(body.hands)) {
+    return undefined;
+  }
+  const hands: HandHistoryEntry[] = [];
+  for (const raw of body.hands) {
+    if (
+      typeof raw !== "object" ||
+      raw === null ||
+      typeof raw.id !== "number" ||
+      typeof raw.playedAt !== "string" ||
+      typeof raw.smallBlind !== "number" ||
+      typeof raw.bigBlind !== "number" ||
+      !Array.isArray(raw.holeCards) ||
+      !Array.isArray(raw.board) ||
+      typeof raw.result !== "string" ||
+      !HAND_RESULTS.has(raw.result) ||
+      typeof raw.delta !== "number"
+    ) {
+      return undefined;
+    }
+    hands.push({
+      id: raw.id,
+      playedAt: raw.playedAt,
+      smallBlind: raw.smallBlind,
+      bigBlind: raw.bigBlind,
+      holeCards: raw.holeCards as string[],
+      board: raw.board as string[],
+      result: raw.result as HandHistoryEntry["result"],
+      delta: raw.delta,
+    });
+  }
+  return hands;
+}
+
+async function fetchHandHistory(): Promise<HandHistoryEntry[] | undefined> {
+  const response = await api("/api/history");
+  if (!response.ok) {
+    return undefined;
+  }
+  return parseHandHistory(await response.json());
+}
+
 function formatChips(amount: number): string {
   return amount.toLocaleString("en-US");
 }
@@ -262,10 +320,15 @@ function render(): void {
       <p data-tab>Tab: <strong>${escapeHtml(formatChips(view.tab))}</strong> play-money chips.</p>
       ${error}
       ${table}
+      ${renderHistoryToggle(view.historyOpen)}
+      ${view.historyOpen ? renderHistory(view.history) : ""}
       <p><button type="button" id="logout">Log out</button></p>
     `;
     app.querySelector("#logout")?.addEventListener("click", () => {
       void onLogout();
+    });
+    app.querySelector("#history-toggle")?.addEventListener("click", () => {
+      void onToggleHistory();
     });
     app.querySelector("#sit")?.addEventListener("click", () => {
       void onSit();
@@ -358,6 +421,45 @@ function renderTable(stack: number): string {
 
 function renderDealControl(): string {
   return `<p><button type="button" id="deal" data-deal>Deal hand</button></p>`;
+}
+
+function renderHistoryToggle(open: boolean): string {
+  return `<p><button type="button" id="history-toggle" data-history-toggle>${
+    open ? "Hide hand history" : "View hand history"
+  }</button></p>`;
+}
+
+const HISTORY_RESULT_LABELS: Record<HandHistoryEntry["result"], string> = {
+  won: "Won",
+  lost: "Lost",
+  split: "Split",
+};
+
+function renderHistory(history: HandHistoryEntry[] | undefined): string {
+  if (history === undefined) {
+    return `<p class="status" data-state="pending" data-history>Loading history…</p>`;
+  }
+  if (history.length === 0) {
+    return `<p data-history>No hands played yet.</p>`;
+  }
+  const rows = history
+    .map((entry) => {
+      const board = entry.board.length ? entry.board.join(" ") : "—";
+      const sign = entry.delta > 0 ? "+" : "";
+      return `<li data-history-row>
+        <span data-history-time>${escapeHtml(entry.playedAt)}</span>
+        — blinds ${escapeHtml(String(entry.smallBlind))}/${escapeHtml(String(entry.bigBlind))},
+        hole cards ${escapeHtml(entry.holeCards.join(" "))}, board ${escapeHtml(board)}:
+        <strong data-history-result>${HISTORY_RESULT_LABELS[entry.result]}</strong>
+        (${sign}${escapeHtml(formatChips(entry.delta))})
+      </li>`;
+    })
+    .join("");
+  return `
+    <div data-history>
+      <ul data-history-list>${rows}</ul>
+    </div>
+  `;
 }
 
 function renderHand(hand: HandView, tab: number): string {
@@ -564,6 +666,8 @@ async function onRegister(form: HTMLFormElement): Promise<void> {
     stack: session.stack,
     hand: session.seated ? await fetchCurrentHand() : undefined,
     error: "",
+    historyOpen: false,
+    history: undefined,
   };
   render();
 }
@@ -594,6 +698,8 @@ async function onLogin(form: HTMLFormElement): Promise<void> {
     stack: session.stack,
     hand: session.seated ? await fetchCurrentHand() : undefined,
     error: "",
+    historyOpen: false,
+    history: undefined,
   };
   render();
 }
@@ -621,7 +727,14 @@ async function onSit(): Promise<void> {
     render();
     return;
   }
-  view = { kind: "signed-in", ...session, hand: undefined, error: "" };
+  view = {
+    kind: "signed-in",
+    ...session,
+    hand: undefined,
+    error: "",
+    historyOpen: view.historyOpen,
+    history: view.history,
+  };
   render();
 }
 
@@ -642,7 +755,14 @@ async function onLeave(): Promise<void> {
     render();
     return;
   }
-  view = { kind: "signed-in", ...session, hand: undefined, error: "" };
+  view = {
+    kind: "signed-in",
+    ...session,
+    hand: undefined,
+    error: "",
+    historyOpen: view.historyOpen,
+    history: view.history,
+  };
   render();
 }
 
@@ -684,7 +804,14 @@ async function onRebuy(): Promise<void> {
   }
   // Back to a fresh 200-chip stack with no hand in progress — same
   // post-state as a brand new sit.
-  view = { kind: "signed-in", ...session, hand: undefined, error: "" };
+  view = {
+    kind: "signed-in",
+    ...session,
+    hand: undefined,
+    error: "",
+    historyOpen: view.historyOpen,
+    history: view.history,
+  };
   render();
 }
 
@@ -733,6 +860,27 @@ async function onAction(action: Action, amount: number | undefined): Promise<voi
   render();
 }
 
+async function onToggleHistory(): Promise<void> {
+  if (view.kind !== "signed-in") {
+    return;
+  }
+  if (view.historyOpen) {
+    view = { ...view, historyOpen: false };
+    render();
+    return;
+  }
+  // Fetch fresh every time it's opened, not just the first time — new
+  // hands settled since the last open should show up (feature 012, AC2).
+  view = { ...view, historyOpen: true, history: undefined };
+  render();
+  const history = await fetchHandHistory();
+  if (view.kind !== "signed-in" || !view.historyOpen) {
+    return; // the user navigated away (logged out, closed it) before this resolved
+  }
+  view = { ...view, history: history ?? [] };
+  render();
+}
+
 render();
 
 try {
@@ -743,6 +891,8 @@ try {
         ...session,
         hand: session.seated ? await fetchCurrentHand() : undefined,
         error: "",
+        historyOpen: false,
+        history: undefined,
       }
     : { kind: "guest", error: "" };
 } catch {

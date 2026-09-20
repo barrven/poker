@@ -1,7 +1,7 @@
 ---
 id: 012
 title: Hand history
-status: backlog
+status: testing
 priority: medium
 iteration: 4
 ---
@@ -29,7 +29,54 @@ export.
 
 ## Implementation Notes
 
-_Filled in during `/implement` — approach taken, files touched, tradeoffs._
+Schema (`server/db.ts`, `schemaVersion` bumped 3 -> 4): new `hand_history`
+table (`user_id`, `played_at`, `small_blind`, `big_blind`, `hole_cards`
+JSON, `board` JSON, `result`, `delta`), indexed on `(user_id, id)`.
+`CREATE TABLE IF NOT EXISTS` handles migration of existing on-disk
+databases automatically — no separate migration step needed.
+
+New module `server/history.ts`: `recordHandHistory()` (insert),
+`listHandHistory()` (select, newest first, default cap 50 — no export,
+no leaderboard per AC5, just this account's own recent hands), and
+`classifyHandResult(winners, humanSeat)`. The classifier is a coarse,
+hand-level read of `SettlementResult.winners` (see
+`poker/settle.ts#awardPotsAtShowdown`): a seat that won at least one pot
+layer appears once with its combined delta; a seat that won nothing
+never appears. So: human absent -> "lost"; human alone -> "won"; human
+present alongside another winning seat -> "split". This does not
+distinguish "won the main pot outright while someone else won a side
+pot" from a true split main pot — both read as "split" from the human's
+seat, which the acceptance criteria's three-way won/lost/split
+vocabulary doesn't ask this feature to disambiguate further.
+
+Wired into `server/table.ts`: a new `recordSettledHandHistory()` helper,
+called at the end of both `settleWithoutShowdown()` and
+`settleAtShowdown()` (right after `syncHumanTab()`, same place the
+running-tab delta is already computed). Delta is
+`session.seats[HUMAN_SEAT].stack - session.handStartStack` — identical
+value `syncHumanTab` uses, so the history row's delta always matches
+what actually happened to the tab. Board/hole cards come from
+`session.hand`, which is still populated post-settlement (needed
+anyway to keep displaying the settled hand); a preflop fold-win records
+`board: []` for free, since `dealFlop` was never called.
+
+New route `GET /api/history` (`server/app.ts`) returns `{ hands: [...] }`
+for the logged-in user, 401 if not authenticated. No POST route — rows
+are only ever written server-side from a real settlement, never
+client-supplied.
+
+Client (`src/main.ts`): a "View hand history" / "Hide hand history"
+toggle button, shown regardless of seated state (criterion 2 doesn't
+require being seated, and a player might want to check history without
+sitting back down). Fetches `/api/history` fresh every time it's
+opened — not just once — so a hand settled since the last open shows
+up without a full page reload. `renderHistory()` lists rows with time,
+blinds, hole cards, board (or "—" if empty), result, and signed delta.
+
+Assumption: "time" (AC1) is the raw SQLite `datetime('now')` string
+(UTC, `YYYY-MM-DD HH:MM:SS`) rendered as-is — no timezone conversion or
+relative-time formatting. Acceptable for a first cut; not something the
+acceptance criteria calls out specifically.
 
 ## Test Notes
 
