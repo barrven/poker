@@ -1,9 +1,9 @@
 ---
 id: 012
 title: Hand history
-status: deferred
+status: backlog
 priority: medium
-iteration: later
+iteration: 4
 ---
 
 ## Description

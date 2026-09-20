@@ -1,9 +1,9 @@
 ---
 id: 008
 title: Readable table view
-status: deferred
+status: backlog
 priority: medium
-iteration: later
+iteration: 4
 ---
 
 ## Description

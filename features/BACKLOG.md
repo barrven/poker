@@ -5,12 +5,17 @@
 > "active" feature (the one currently in flight) is always named in
 > `STATE.md`, not just here.
 
-## Iteration 3 (current slice)
+## Iteration 4 (current slice)
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 010 | Next hand and 6-handed table | done | medium | 3 | [010-next-hand.md](010-next-hand.md) |
-| 011 | Rebuy and play-money top-up | done | medium | 3 | [011-rebuy-topup.md](011-rebuy-topup.md) |
+| 008 | Readable table view | backlog | medium | 4 | [008-table-view.md](008-table-view.md) |
+| 012 | Hand history | backlog | medium | 4 | [012-hand-history.md](012-hand-history.md) |
+| 013 | Phone-usable layout | backlog | low | 4 | [013-responsive-layout.md](013-responsive-layout.md) |
+
+<!-- 013 depends on 008 (table view) and 012 (history view) existing to
+make responsive, so it's scheduled last in this slice even though all
+three are in the same iteration. -->
 
 ## Done (prior iterations)
 
@@ -25,14 +30,8 @@
 | 006 | Betting rounds and legal actions | done | high | 2 | [006-betting.md](006-betting.md) |
 | 007 | Showdown, pots, and hand ranking | done | high | 2 | [007-showdown-pots.md](007-showdown-pots.md) |
 | 009 | Computer opponents | done | medium | 2 | [009-ai-opponents.md](009-ai-opponents.md) |
-
-## Deferred (later)
-
-| ID | Title | Status | Priority | Iteration | File |
-|----|-------|--------|----------|-----------|------|
-| 008 | Readable table view | deferred | medium | later | [008-table-view.md](008-table-view.md) |
-| 012 | Hand history | deferred | medium | later | [012-hand-history.md](012-hand-history.md) |
-| 013 | Phone-usable layout | deferred | low | later | [013-responsive-layout.md](013-responsive-layout.md) |
+| 010 | Next hand and 6-handed table | done | medium | 3 | [010-next-hand.md](010-next-hand.md) |
+| 011 | Rebuy and play-money top-up | done | medium | 3 | [011-rebuy-topup.md](011-rebuy-topup.md) |
 
 <!--
 Status values: backlog | implementing | testing | validating | accept | done | blocked | deferred

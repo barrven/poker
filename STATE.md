@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 4
-- **Phase:** features
-- **Active feature:** _none — slice complete_
+- **Phase:** implement
+- **Active feature:** 008-table-view
 - **Last updated:** 2026-09-20
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — scheduled iteration 4 slice (008, 012, 013 — the entire remaining backlog); active 008-table-view; phase set to `implement`
 - 2026-09-20 — retro (iteration 3): no spec changes needed; more to build; outer iteration bumped to 4; phase set to `features` (spec unchanged, so skipping straight past `/spec`)
 - 2026-09-20 — accepted 011-rebuy-topup; slice (010, 011) complete; phase set to `retro`
 - 2026-09-20 — validated 011-rebuy-topup (pass); phase set to `accept`

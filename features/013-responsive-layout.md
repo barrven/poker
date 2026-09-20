@@ -1,9 +1,9 @@
 ---
 id: 013
 title: Phone-usable layout
-status: deferred
+status: backlog
 priority: low
-iteration: later
+iteration: 4
 ---
 
 ## Description
