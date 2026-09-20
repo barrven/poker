@@ -1,7 +1,7 @@
 ---
 id: 010
 title: Next hand and 6-handed table
-status: accept
+status: done
 priority: medium
 iteration: 3
 ---
@@ -180,4 +180,8 @@ regression).
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-20 — Accepted. User selected "Accept and continue" in response
+to the acceptance summary (all 4 acceptance criteria pass, project
+checks pass, the chip-conservation invariant caveat from 009 flagged as
+an intentional, documented consequence). Moving on to 011-rebuy-topup,
+the last feature in this slice.

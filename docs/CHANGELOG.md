@@ -7,6 +7,15 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Next hand and 6-handed table (features/010-next-hand.md)
+
+After a hand settles, the next one deals itself automatically a few
+seconds later — no more clicking "deal" every time. The dealer button
+rotates one seat clockwise each hand. Computer opponents that bust are
+replaced with a fresh 200-chip stack so the table always stays six
+seats. If you run out of chips, you can't be dealt into another hand
+until you top up (coming soon) or leave the table.
+
 ## 2026-09-20 — Computer opponents (features/009-ai-opponents.md)
 
 The five computer seats now play with a real strategy based on hand
