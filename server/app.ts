@@ -14,7 +14,13 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { pingDb } from "./db.js";
-import { leaveTable, sitDown, tableStateFor } from "./table.js";
+import {
+  currentHand,
+  leaveTable,
+  sitDown,
+  startHand,
+  tableStateFor,
+} from "./table.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const MAX_BODY = 8192;
@@ -253,6 +259,44 @@ async function handle(
       return;
     }
     sendJson(res, 200, userPayload(db, { ...user, tab: result.tab }));
+    return;
+  }
+
+  if (method === "POST" && pathOnly === "/api/hand/start") {
+    const user = currentUser(db, req);
+    if (!user) {
+      sendJson(res, 401, { error: "Authentication required" });
+      return;
+    }
+    const result = startHand(db, user.id);
+    if (!result.ok) {
+      if (result.reason === "not-seated") {
+        sendJson(res, 400, { error: "Sit down before starting a hand." });
+        return;
+      }
+      sendJson(res, 409, { error: "A hand is already in progress." });
+      return;
+    }
+    sendJson(res, 200, result.view);
+    return;
+  }
+
+  if (method === "GET" && pathOnly === "/api/hand") {
+    const user = currentUser(db, req);
+    if (!user) {
+      sendJson(res, 401, { error: "Authentication required" });
+      return;
+    }
+    const result = currentHand(db, user.id);
+    if (!result.ok) {
+      const message =
+        result.reason === "not-seated"
+          ? "Sit down before starting a hand."
+          : "No hand in progress.";
+      sendJson(res, 400, { error: message });
+      return;
+    }
+    sendJson(res, 200, result.view);
     return;
   }
 
