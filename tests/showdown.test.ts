@@ -218,16 +218,16 @@ test("a new hand can be dealt after the previous one settles", async () => {
       body: "{}",
       headers: { cookie: alice.cookie },
     });
-    assert.equal(dealAgain.status, 200);
-    const view = dealAgain.body as HandBody & { result: unknown; street: string };
-    // A fresh hand starts unsettled — unless the human happened to lose
-    // everything in the first hand (busted to a 0 stack), in which case
-    // they're dealt in all-in for 0 and can't act, so this second hand
-    // can also resolve immediately without any input. Rebuying a busted
-    // stack is feature 011 (deferred); this endpoint doesn't refuse to
-    // deal a new hand to a stackless seat.
     if (firstSettled.seats[0].stack > 0) {
+      // Still has chips: a fresh hand deals in and starts unsettled.
+      assert.equal(dealAgain.status, 200);
+      const view = dealAgain.body as HandBody & { result: unknown };
       assert.equal(view.result, null);
+    } else {
+      // Busted to 0 in the first hand: feature 010 refuses to deal a new
+      // hand until the player rebuys (feature 011, not shipped yet) or
+      // leaves (AC2) — they are not dealt in all-in for 0.
+      assert.equal(dealAgain.status, 400);
     }
   } finally {
     await app.close();
@@ -268,7 +268,7 @@ test("the app shows the settlement result and a real 'Deal next hand' control wi
   assert.match(settlementBlock, /data-result/);
   assert.match(settlementBlock, /data-revealed/);
   assert.match(settlementBlock, /id="deal"/);
-  assert.match(settlementBlock, />Deal next hand</);
+  assert.match(settlementBlock, />Deal next hand/);
   assert.match(main, /hand\.result/);
   assert.match(main, /\/api\/hand\/start/);
 });
