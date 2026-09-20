@@ -77,7 +77,7 @@ type HandHistoryEntry = {
 
 type View =
   | { kind: "loading" }
-  | { kind: "guest"; error: string }
+  | { kind: "guest"; authView: "login" | "register"; error: string }
   | {
       kind: "signed-in";
       username: string;
@@ -368,22 +368,32 @@ function render(): void {
   const error = view.error
     ? `<p class="status" data-state="error">${escapeHtml(view.error)}</p>`
     : "";
-  app.innerHTML = `
-    <h1>Poker</h1>
-    <p>No-Limit Texas Hold'em vs computer. Play-money chips.</p>
-    ${error}
+  // Login-first (feature 017): a logged-out visitor sees one form at a
+  // time, not both stacked together — register-form and login-form both
+  // still exist in the DOM's possible states, just never simultaneously.
+  const registerForm = `
     <form id="register-form">
       <h2>Register</h2>
       <label>Username <input name="username" autocomplete="username" maxlength="32" required /></label>
       <label>Password <input name="password" type="password" autocomplete="new-password" required /></label>
       <button type="submit">Register</button>
+      <p><button type="button" id="show-login" data-show-login>Already have an account? Log in</button></p>
     </form>
+  `;
+  const loginForm = `
     <form id="login-form">
       <h2>Log in</h2>
       <label>Username <input name="username" autocomplete="username" maxlength="32" required /></label>
       <label>Password <input name="password" type="password" autocomplete="current-password" required /></label>
       <button type="submit">Log in</button>
+      <p><button type="button" id="show-register" data-show-register>Need an account? Register</button></p>
     </form>
+  `;
+  app.innerHTML = `
+    <h1>Poker</h1>
+    <p>No-Limit Texas Hold'em vs computer. Play-money chips.</p>
+    ${error}
+    ${view.authView === "register" ? registerForm : loginForm}
   `;
   app.querySelector("#register-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -392,6 +402,14 @@ function render(): void {
   app.querySelector("#login-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
     void onLogin(event.target as HTMLFormElement);
+  });
+  app.querySelector("#show-login")?.addEventListener("click", () => {
+    view = { kind: "guest", authView: "login", error: "" };
+    render();
+  });
+  app.querySelector("#show-register")?.addEventListener("click", () => {
+    view = { kind: "guest", authView: "register", error: "" };
+    render();
   });
   if (hasSitControl(app)) {
     throw new Error("sit control must not be shown while logged out");
@@ -708,17 +726,20 @@ async function onRegister(form: HTMLFormElement): Promise<void> {
     body: JSON.stringify({ username, password }),
   });
   if (!response.ok) {
-    view = { kind: "guest", error: await readError(response) };
+    view = { kind: "guest", authView: "register", error: await readError(response) };
     render();
     return;
   }
   const body: unknown = await response.json();
   const session = parseSession(body) ?? (await loadSession());
   if (!session) {
-    view = { kind: "guest", error: "Something went wrong." };
+    view = { kind: "guest", authView: "register", error: "Something went wrong." };
     render();
     return;
   }
+  // A valid registration signs the user straight in (no separate
+  // "registered, now log in" step) — the simpler of the two options AC4
+  // allows, and consistent with feature 002's original auth flow.
   view = {
     kind: "signed-in",
     username: session.username,
@@ -740,14 +761,14 @@ async function onLogin(form: HTMLFormElement): Promise<void> {
     body: JSON.stringify({ username, password }),
   });
   if (!response.ok) {
-    view = { kind: "guest", error: await readError(response) };
+    view = { kind: "guest", authView: "login", error: await readError(response) };
     render();
     return;
   }
   const body: unknown = await response.json();
   const session = parseSession(body) ?? (await loadSession());
   if (!session) {
-    view = { kind: "guest", error: "Something went wrong." };
+    view = { kind: "guest", authView: "login", error: "Something went wrong." };
     render();
     return;
   }
@@ -768,7 +789,7 @@ async function onLogin(form: HTMLFormElement): Promise<void> {
 async function onLogout(): Promise<void> {
   clearAutoDeal();
   await api("/api/logout", { method: "POST", body: "{}" });
-  view = { kind: "guest", error: "" };
+  view = { kind: "guest", authView: "login", error: "" };
   render();
 }
 
@@ -955,8 +976,8 @@ try {
         historyOpen: false,
         history: undefined,
       }
-    : { kind: "guest", error: "" };
+    : { kind: "guest", authView: "login", error: "" };
 } catch {
-  view = { kind: "guest", error: "API unreachable. Is npm run dev running?" };
+  view = { kind: "guest", authView: "login", error: "API unreachable. Is npm run dev running?" };
 }
 render();

@@ -1,7 +1,7 @@
 ---
 id: 017
 title: Standard login/register flow
-status: backlog
+status: testing
 priority: medium
 iteration: 5
 ---
@@ -34,6 +34,43 @@ _Testable, checkable statements. `/validate` and `/accept` check against these d
 
 ## Implementation Notes
 _Filled in during `/implement` — approach taken, files touched, tradeoffs._
+
+`src/main.ts` only. The guest branch of the `View` union gained an
+`authView: "login" | "register"` field (defaults to `"login"` on every
+fresh/unauthenticated load and after logout — AC1); `render()`'s guest
+branch now builds `registerForm`/`loginForm` as separate template
+strings and picks one via `view.authView === "register" ? ... : ...`
+instead of always concatenating both. Each form gained a small
+`<button type="button">` toggle (`#show-login`/`#show-register`) that
+just flips `view.authView` and re-renders client-side — no API call,
+no page navigation.
+
+`onRegister`/`onLogin` failures now set `authView` back to whichever
+form the user was actually on (`"register"`/`"login"` respectively)
+instead of an unconditional guest reset, so a failed submission keeps
+the user on the same form with the error shown, rather than silently
+bouncing them to login (AC5 — existing error-surfacing behavior,
+preserved, not just "still shows an error somewhere").
+
+AC4 (what happens after a valid registration): kept the existing
+behavior unchanged — a successful `/api/register` already signs the
+user straight into a session (feature 002), so there's no separate
+"registered, go log in" step. This is the simpler of AC4's two allowed
+options and required no new code; noting the choice per AC4's own
+"implementer's call, note which was chosen."
+
+No change to `server/auth.ts`, `server/app.ts`, or any password/session
+logic — this is purely a client-side view-state change, matching the
+feature's stated scope ("No change to the underlying auth behavior").
+
+Verified visually with the headless-Chrome-plus-real-markup technique
+from feature 016 (see that feature's Validation Notes / this session's
+saved memory on the practice): built two standalone HTML files
+reproducing the real login-view and register-view markup against the
+real `src/style.css`, screenshotted both. Confirmed: only one form
+shows at a time, the toggle link is visible and reads clearly in both
+directions, and an error (mocked "That username is taken.") renders
+correctly above the register form.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
