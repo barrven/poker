@@ -17,6 +17,10 @@ const BUY_IN = 200;
 const TOP_UP_AMOUNT = 1000;
 const COMPUTER_SEATS = 5;
 
+// A small poker-chip icon (feature 016), styled purely in CSS (.chip-icon)
+// so stack/bet/pot amounts read as chip counts, not bare numbers.
+const CHIP_ICON = '<span class="chip-icon" aria-hidden="true"></span>';
+
 type Action = "fold" | "check" | "call" | "bet" | "raise" | "all-in";
 
 type HandSeatView = {
@@ -405,15 +409,12 @@ function renderTable(stack: number): string {
   const computerSeats = Array.from(
     { length: COMPUTER_SEATS },
     (_, i) =>
-      `<li data-seat="cpu-${i + 1}">Computer ${i + 1} — ${formatChips(BUY_IN)} chips</li>`,
+      `<li class="seat-slot-${i + 2}" data-seat="cpu-${i + 1}">Computer ${i + 1} — ${CHIP_ICON}${formatChips(BUY_IN)} chips</li>`,
   ).join("");
+  const seatsHtml = `<li class="seat-slot-1" data-seat="you">You — ${CHIP_ICON}${formatChips(stack)} chips</li>${computerSeats}`;
   return `
     <div data-seated-table>
-      <p data-blinds>Blinds: 1/2 play-money.</p>
-      <ul data-seats>
-        <li data-seat="you">You — ${formatChips(stack)} chips</li>
-        ${computerSeats}
-      </ul>
+      ${renderTableOval(`<ul data-seats>${seatsHtml}</ul>`, `<p data-blinds>Blinds: 1/2 play-money.</p>`)}
       <p><button type="button" id="leave">Leave table</button></p>
     </div>
   `;
@@ -466,14 +467,19 @@ function renderHand(hand: HandView, tab: number): string {
   const seatsHtml = hand.seats
     .map((seat) => {
       const label = seat.kind === "human" ? "You" : `Computer ${seat.index}`;
+      // Poker-table markers (feature 016): small styled badges, not bare
+      // "(D/SB/BB)" text.
       const markers = [
-        seat.index === hand.button ? "D" : "",
-        seat.index === hand.smallBlindSeat ? "SB" : "",
-        seat.index === hand.bigBlindSeat ? "BB" : "",
-      ]
-        .filter(Boolean)
-        .join("/");
-      const tag = markers ? ` (${markers})` : "";
+        seat.index === hand.button
+          ? '<span class="marker-badge marker-button" title="Dealer">D</span>'
+          : "",
+        seat.index === hand.smallBlindSeat
+          ? '<span class="marker-badge marker-sb" title="Small blind">SB</span>'
+          : "",
+        seat.index === hand.bigBlindSeat
+          ? '<span class="marker-badge marker-bb" title="Big blind">BB</span>'
+          : "",
+      ].join("");
       const status = seat.folded ? " — folded" : seat.allIn ? " — all-in" : "";
       const seatKey = seat.kind === "human" ? "you" : `cpu-${seat.index}`;
       const acting = seat.index === hand.actingSeat && !hand.result ? " data-acting" : "";
@@ -485,7 +491,11 @@ function renderHand(hand: HandView, tab: number): string {
         seat.kind === "human"
           ? ""
           : ` ${revealedEntry ? renderCards(revealedEntry.cards) : renderHiddenCards(2)}`;
-      return `<li data-seat="${seatKey}"${acting}>${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips${escapeHtml(status)} (bet ${formatChips(seat.streetContribution)})${seatCards}</li>`;
+      // Seat 0 (human) always sits at the bottom of the oval, seats 1-5
+      // fill the remaining slots going around — array position already
+      // equals seat index (server always emits seats 0..5 in order).
+      const slot = seat.index + 1;
+      return `<li class="seat-slot-${slot}" data-seat="${seatKey}"${acting}>${markers}${escapeHtml(label)} — ${CHIP_ICON}${formatChips(seat.stack)} chips${escapeHtml(status)} (bet ${CHIP_ICON}${formatChips(seat.streetContribution)})${seatCards}</li>`;
     })
     .join("");
   const boardCards = hand.board.length ? renderCards(hand.board) : "—";
@@ -500,14 +510,16 @@ function renderHand(hand: HandView, tab: number): string {
     : hand.actingSeat === null
       ? "Waiting…"
       : `Turn: ${escapeHtml(seatLabel(hand.actingSeat))}`;
+  const centerHtml = `
+    <p data-pot>Pot: ${CHIP_ICON}${formatChips(hand.pot)} chips.</p>
+    <p data-board>Board: ${boardCards}</p>
+  `;
   return `
     <div data-hand>
       <p data-street>Street: ${escapeHtml(hand.street)}</p>
       <p data-turn>${turnText}</p>
-      <p data-pot>Pot: ${formatChips(hand.pot)} chips.</p>
-      <p data-board>Board: ${boardCards}</p>
       <p data-hole-cards>Your cards: ${renderCards(hand.holeCards)}</p>
-      <ul data-seats>${seatsHtml}</ul>
+      ${renderTableOval(`<ul data-seats>${seatsHtml}</ul>`, centerHtml)}
       ${actionArea}
       ${renderActionLog(hand.actionLog)}
       <p><button type="button" id="leave">Leave table</button></p>
@@ -661,6 +673,21 @@ function renderCards(cards: string[]): string {
 
 function renderHiddenCards(count: number): string {
   return `<span class="cards">${Array.from({ length: count }, cardBackImg).join("")}</span>`;
+}
+
+// Oval poker table (feature 016): seats are positioned around the oval by
+// CSS alone (.seat-slot-1..6, set on each <li> by both renderTable and
+// renderHand), keyed off the seat's own index — this helper just supplies
+// the shared felt/center wrapper both call sites need. Each call site
+// still writes its own <ul data-seats> (rather than this helper doing it)
+// so that literal marker stays part of each caller's own source text.
+function renderTableOval(seatsListHtml: string, centerHtml: string): string {
+  return `
+    <div class="table-oval">
+      <div class="table-center">${centerHtml}</div>
+      ${seatsListHtml}
+    </div>
+  `;
 }
 
 function formFields(form: HTMLFormElement): {

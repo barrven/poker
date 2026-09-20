@@ -132,24 +132,169 @@ button {
   }
 }
 
+/* Oval poker table (feature 016). Mobile-first: the base rules below are
+   a plain, always-non-overlapping two-column grid on felt — safe at any
+   width, phone included. From 640px up (comfortably past #app's own
+   36rem/576px cap, so the felt's rendered width is a known, stable
+   value once this breakpoint is active — not something that keeps
+   shrinking as the viewport narrows) a media query lays the same seat
+   markup out as an actual oval by absolute-positioning each
+   .seat-slot-N. Below 640px (including phone) stays the grid: fitting
+   six text-heavy seat boxes non-overlapping around a true ellipse needs
+   more width than a phone has, and AC3 explicitly allows the shape to
+   adapt there. */
+
+.table-oval {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: radial-gradient(ellipse at center, #1f4a33 0%, #163325 72%);
+  border: 3px solid #2c5a3e;
+  box-shadow: inset 0 0 0 6px rgba(0, 0, 0, 0.15);
+}
+
+.table-center {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.table-center p {
+  margin: 0;
+}
+
 [data-seats] {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.35rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.4rem;
 }
 
 [data-seats] li {
   padding: 0.35rem 0.5rem;
   border: 1px solid transparent;
-  border-radius: 0.25rem;
-  background: rgba(232, 228, 217, 0.04);
+  border-radius: 0.4rem;
+  background: rgba(22, 51, 37, 0.92);
+  box-shadow: 0 0 0 1px rgba(232, 228, 217, 0.15);
+  text-align: center;
 }
 
 [data-seats] li[data-acting] {
   border-color: #b6e3b6;
-  background: rgba(182, 227, 182, 0.1);
+  background: rgba(182, 227, 182, 0.16);
+}
+
+.marker-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.3rem;
+  height: 1.3rem;
+  margin-right: 0.3rem;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.marker-button {
+  background: #e8e4d9;
+  color: #163325;
+}
+
+.marker-sb {
+  background: #6fa8dc;
+  color: #163325;
+}
+
+.marker-bb {
+  background: #f0b4b4;
+  color: #163325;
+}
+
+.chip-icon {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 0.25em;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#c8443c 0deg 30deg, #e8e4d9 30deg 60deg);
+  box-shadow: 0 0 0 1px rgba(232, 228, 217, 0.4);
+  vertical-align: -0.1em;
+}
+
+@media (min-width: 640px) {
+  .table-oval {
+    position: relative;
+    margin: 1.25rem auto;
+    padding: 2.5rem 1rem;
+    width: 100%;
+    max-width: 30rem;
+    aspect-ratio: 4 / 5;
+    border-radius: 50%;
+  }
+
+  .table-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    padding: 0 4rem;
+    margin: 0;
+  }
+
+  [data-seats] {
+    position: absolute;
+    inset: 0;
+    display: block;
+  }
+
+  [data-seats] li {
+    position: absolute;
+    width: 8.5rem;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.4rem;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Human seat at the bottom (nearest the viewer), the rest spaced
+     around the ellipse — see the comment above for why the felt's width
+     is a known ~30rem/480px here, which is what these percentages (with
+     safe double-digit margins from every edge) are sized against. */
+  .seat-slot-1 {
+    left: 50%;
+    top: 97%;
+  }
+
+  .seat-slot-2 {
+    left: 20%;
+    top: 78%;
+  }
+
+  .seat-slot-3 {
+    left: 20%;
+    top: 22%;
+  }
+
+  .seat-slot-4 {
+    left: 50%;
+    top: 3%;
+  }
+
+  .seat-slot-5 {
+    left: 80%;
+    top: 22%;
+  }
+
+  .seat-slot-6 {
+    left: 80%;
+    top: 78%;
+  }
 }
 
 [data-actions] {
