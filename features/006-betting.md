@@ -1,7 +1,7 @@
 ---
 id: 006
 title: Betting rounds and legal actions
-status: accept
+status: done
 priority: high
 iteration: 2
 ---
@@ -242,4 +242,7 @@ carried from feature 005) — all deliberate and documented there.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-19 — Accepted. User selected "Accept and continue" in response
+to the acceptance summary (all 6 acceptance criteria pass, project
+checks pass, playable end-to-end for the first betting round via the
+placeholder computer strategy). Moving on to 007-showdown-pots.

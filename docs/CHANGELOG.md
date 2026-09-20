@@ -7,6 +7,16 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-19 — Betting rounds and legal actions (features/006-betting.md)
+
+On your turn you can fold, check, call, bet, raise, or go all-in — only
+the actions that are actually legal given stacks, the current bet, and
+minimum-raise rules. Illegal actions (checking into a bet, raising below
+the minimum, acting out of turn) are rejected without changing the pot
+or any stack. Computer opponents act with a simple always-check/call
+placeholder for now (real strategy is a later feature), so a full
+betting round is playable today.
+
 ## 2026-09-19 — Deal a Hold'em hand (features/005-deal-hand.md)
 
 A seated player can deal a hand with a "Deal hand" button: a shuffled
