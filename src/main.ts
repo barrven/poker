@@ -309,6 +309,9 @@ function render(): void {
 
   if (view.kind === "signed-in") {
     scheduleAutoDeal(view.hand);
+    if (!view.seated && view.history === undefined) {
+      void loadDashboardHistory();
+    }
     const error = view.error
       ? `<p class="status" data-state="error">${escapeHtml(view.error)}</p>`
       : "";
@@ -316,17 +319,20 @@ function render(): void {
       ? view.hand
         ? renderHand(view.hand, view.tab)
         : `${renderDealControl()}${renderTable(view.stack)}`
-      : renderSitControl(view.tab);
+      : renderDashboard(view.tab, view.history);
+    // Hand history is shown outright on the dashboard above (not
+    // seated); while seated it's still available, but behind the same
+    // toggle as before this feature — the table/hand view already has
+    // plenty on screen without it.
+    const seatedHistorySection = view.seated
+      ? `${renderHistoryToggle(view.historyOpen)}${view.historyOpen ? renderHistory(view.history) : ""}`
+      : "";
     app.innerHTML = `
-      <h1>Poker</h1>
-      <p>No-Limit Texas Hold'em vs computer. Play-money chips.</p>
-      <p>Logged in as <strong>${escapeHtml(view.username)}</strong>.</p>
+      ${renderTopMenu(view.username)}
       <p data-tab>Tab: <strong>${escapeHtml(formatChips(view.tab))}</strong> play-money chips.</p>
       ${error}
       ${table}
-      ${renderHistoryToggle(view.historyOpen)}
-      ${view.historyOpen ? renderHistory(view.history) : ""}
-      <p><button type="button" id="logout">Log out</button></p>
+      ${seatedHistorySection}
     `;
     app.querySelector("#logout")?.addEventListener("click", () => {
       void onLogout();
@@ -421,6 +427,39 @@ function renderSitControl(tab: number): string {
     return `<p class="status" data-state="error">You need at least ${BUY_IN} chips on your tab to sit down.</p>`;
   }
   return `<p><button type="button" id="sit" data-sit>Sit down (${BUY_IN} chips)</button></p>`;
+}
+
+// App-shell top menu bar (feature 018): visible in every signed-in
+// state. "Profile" is just the username (no other requirement defines
+// account-profile behavior); "Settings" is a real, visible entry but a
+// disabled placeholder — there's nothing to configure yet, and a
+// disabled control communicates that honestly instead of faking an
+// action with no effect.
+function renderTopMenu(username: string): string {
+  return `
+    <header data-topbar>
+      <span data-brand>Poker</span>
+      <nav data-topnav>
+        <span data-profile title="Profile">${escapeHtml(username)}</span>
+        <button type="button" id="settings" data-settings disabled title="No settings yet">Settings</button>
+        <button type="button" id="logout" data-logout>Log out</button>
+      </nav>
+    </header>
+  `;
+}
+
+// The default logged-in view before sitting at a table (feature 018):
+// sit-down and add-chips actions, plus hand history shown outright
+// (not behind the toggle used while seated below).
+function renderDashboard(tab: number, history: HandHistoryEntry[] | undefined): string {
+  return `
+    <div data-dashboard>
+      ${renderSitControl(tab)}
+      <p><button type="button" id="topup" data-topup>Add ${formatChips(TOP_UP_AMOUNT)} chips</button></p>
+      <h2>Hand history</h2>
+      ${renderHistory(history)}
+    </div>
+  `;
 }
 
 function renderTable(stack: number): string {
@@ -958,6 +997,22 @@ async function onToggleHistory(): Promise<void> {
   const history = await fetchHandHistory();
   if (view.kind !== "signed-in" || !view.historyOpen) {
     return; // the user navigated away (logged out, closed it) before this resolved
+  }
+  view = { ...view, history: history ?? [] };
+  render();
+}
+
+// The dashboard (feature 018) shows hand history automatically — no
+// toggle click needed — so it needs its own fetch-on-first-render,
+// distinct from onToggleHistory's fetch-on-open (still used while
+// seated). Same "did the user navigate away before this resolved" guard.
+async function loadDashboardHistory(): Promise<void> {
+  if (view.kind !== "signed-in" || view.seated) {
+    return;
+  }
+  const history = await fetchHandHistory();
+  if (view.kind !== "signed-in" || view.seated) {
+    return;
   }
   view = { ...view, history: history ?? [] };
   render();

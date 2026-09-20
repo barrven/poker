@@ -84,6 +84,59 @@ button {
   cursor: pointer;
 }
 
+/* App-shell top menu bar (feature 018): flex-wrap keeps this from
+   forcing horizontal scroll at phone width — profile/settings/logout
+   just drop to a second line under the brand on a narrow enough
+   viewport instead of squeezing or overflowing. */
+[data-topbar] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #2c5a3e;
+}
+
+[data-brand] {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+[data-topnav] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+[data-profile] {
+  color: #c8c0a8;
+}
+
+[data-topnav] button {
+  padding: 0.3rem 0.7rem;
+}
+
+[data-topnav] button:disabled {
+  color: #8fa88f;
+  cursor: default;
+  opacity: 0.7;
+}
+
+[data-dashboard] {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+[data-dashboard] h2 {
+  margin: 0.5rem 0 0;
+  font-size: 1.1rem;
+}
+
 /* Readable table view (feature 008): structure and legibility, not
    themed chrome. Card artwork (feature 015) is the one graphical
    exception — the SVGs are fixed-aspect-ratio and sized in rem so they
