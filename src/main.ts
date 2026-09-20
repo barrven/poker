@@ -16,7 +16,16 @@ type Session = {
 const BUY_IN = 200;
 const COMPUTER_SEATS = 5;
 
-type HandSeatView = { index: number; kind: "human" | "computer"; stack: number };
+type Action = "fold" | "check" | "call" | "bet" | "raise" | "all-in";
+
+type HandSeatView = {
+  index: number;
+  kind: "human" | "computer";
+  stack: number;
+  folded: boolean;
+  allIn: boolean;
+  streetContribution: number;
+};
 type HandView = {
   button: number;
   smallBlindSeat: number;
@@ -24,6 +33,13 @@ type HandView = {
   street: string;
   board: string[];
   holeCards: string[];
+  pot: number;
+  currentBet: number;
+  toCall: number;
+  minRaiseSize: number;
+  actingSeat: number | null;
+  roundComplete: boolean;
+  legalActions: Action[];
   seats: HandSeatView[];
 };
 
@@ -129,6 +145,13 @@ function parseHandView(body: unknown): HandView | undefined {
     typeof b.street !== "string" ||
     !Array.isArray(b.board) ||
     !Array.isArray(b.holeCards) ||
+    typeof b.pot !== "number" ||
+    typeof b.currentBet !== "number" ||
+    typeof b.toCall !== "number" ||
+    typeof b.minRaiseSize !== "number" ||
+    (b.actingSeat !== null && typeof b.actingSeat !== "number") ||
+    typeof b.roundComplete !== "boolean" ||
+    !Array.isArray(b.legalActions) ||
     !Array.isArray(b.seats)
   ) {
     return undefined;
@@ -140,6 +163,13 @@ function parseHandView(body: unknown): HandView | undefined {
     street: b.street,
     board: b.board as string[],
     holeCards: b.holeCards as string[],
+    pot: b.pot,
+    currentBet: b.currentBet,
+    toCall: b.toCall,
+    minRaiseSize: b.minRaiseSize,
+    actingSeat: b.actingSeat as number | null,
+    roundComplete: b.roundComplete,
+    legalActions: b.legalActions as Action[],
     seats: b.seats as HandSeatView[],
   };
 }
@@ -196,6 +226,19 @@ function render(): void {
     app.querySelector("#deal")?.addEventListener("click", () => {
       void onDeal();
     });
+    app
+      .querySelectorAll<HTMLButtonElement>("[data-action]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.action as Action;
+          const amountInput = app.querySelector<HTMLInputElement>("#raise-amount");
+          const amount =
+            action === "bet" || action === "raise"
+              ? Number(amountInput?.value ?? "0")
+              : undefined;
+          void onAction(action, amount);
+        });
+      });
     return;
   }
 
@@ -273,20 +316,65 @@ function renderHand(hand: HandView): string {
         .filter(Boolean)
         .join("/");
       const tag = markers ? ` (${markers})` : "";
+      const status = seat.folded ? " — folded" : seat.allIn ? " — all-in" : "";
       const seatKey = seat.kind === "human" ? "you" : `cpu-${seat.index}`;
-      return `<li data-seat="${seatKey}">${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips</li>`;
+      return `<li data-seat="${seatKey}">${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips${escapeHtml(status)} (bet ${formatChips(seat.streetContribution)})</li>`;
     })
     .join("");
   const boardText = hand.board.length ? hand.board.join(" ") : "—";
+  const isHumanTurn = hand.actingSeat === 0 && hand.legalActions.length > 0;
+  const actionArea = isHumanTurn
+    ? renderActionControls(hand)
+    : `<p class="status" data-state="pending">${hand.roundComplete ? "Betting round complete." : "Waiting for other players…"}</p>`;
   return `
     <div data-hand>
       <p data-street>Street: ${escapeHtml(hand.street)}</p>
+      <p data-pot>Pot: ${formatChips(hand.pot)} chips.</p>
       <p data-board>Board: ${escapeHtml(boardText)}</p>
       <p data-hole-cards>Your cards: ${escapeHtml(hand.holeCards.join(" "))}</p>
       <ul data-seats>${seatsHtml}</ul>
+      ${actionArea}
       <p><button type="button" id="leave">Leave table</button></p>
     </div>
   `;
+}
+
+function renderActionControls(hand: HandView): string {
+  const buttons: string[] = [];
+  if (hand.legalActions.includes("fold")) {
+    buttons.push(
+      `<button type="button" data-action="fold">Fold</button>`,
+    );
+  }
+  if (hand.legalActions.includes("check")) {
+    buttons.push(
+      `<button type="button" data-action="check">Check</button>`,
+    );
+  }
+  if (hand.legalActions.includes("call")) {
+    buttons.push(
+      `<button type="button" data-action="call">Call ${formatChips(hand.toCall)}</button>`,
+    );
+  }
+  if (hand.legalActions.includes("all-in")) {
+    buttons.push(
+      `<button type="button" data-action="all-in">All-in</button>`,
+    );
+  }
+  let raiseControl = "";
+  if (hand.legalActions.includes("bet")) {
+    raiseControl = `
+      <label>Bet <input type="number" id="raise-amount" min="${hand.minRaiseSize}" value="${hand.minRaiseSize}" /></label>
+      <button type="button" data-action="bet">Bet</button>
+    `;
+  } else if (hand.legalActions.includes("raise")) {
+    const minTo = hand.currentBet + hand.minRaiseSize;
+    raiseControl = `
+      <label>Raise to <input type="number" id="raise-amount" min="${minTo}" value="${minTo}" /></label>
+      <button type="button" data-action="raise">Raise</button>
+    `;
+  }
+  return `<div data-actions>${buttons.join(" ")}${raiseControl}</div>`;
 }
 
 function escapeHtml(value: string): string {
@@ -419,6 +507,29 @@ async function onDeal(): Promise<void> {
     return;
   }
   const response = await api("/api/hand/start", { method: "POST", body: "{}" });
+  if (!response.ok) {
+    view = { ...view, error: await readError(response) };
+    render();
+    return;
+  }
+  const hand = parseHandView(await response.json());
+  if (!hand) {
+    view = { ...view, error: "Something went wrong." };
+    render();
+    return;
+  }
+  view = { ...view, hand, error: "" };
+  render();
+}
+
+async function onAction(action: Action, amount: number | undefined): Promise<void> {
+  if (view.kind !== "signed-in") {
+    return;
+  }
+  const response = await api("/api/hand/action", {
+    method: "POST",
+    body: JSON.stringify(amount === undefined ? { action } : { action, amount }),
+  });
   if (!response.ok) {
     view = { ...view, error: await readError(response) };
     render();

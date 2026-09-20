@@ -1,4 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
+import type { Action, BettingState } from "./poker/betting.js";
+import { applyAction, legalActions, startBettingRound } from "./poker/betting.js";
 import { dealHand } from "./poker/hand.js";
 import type { HandState } from "./poker/hand.js";
 
@@ -17,7 +19,14 @@ export type Seat = { kind: "human" | "computer"; stack: number };
 
 export type TableState = { seated: true; stack: number } | { seated: false };
 
-export type SeatView = { index: number; kind: Seat["kind"]; stack: number };
+export type SeatView = {
+  index: number;
+  kind: Seat["kind"];
+  stack: number;
+  folded: boolean;
+  allIn: boolean;
+  streetContribution: number;
+};
 
 export type HandView = {
   button: number;
@@ -26,12 +35,20 @@ export type HandView = {
   street: HandState["street"];
   board: HandState["board"];
   holeCards: HandState["holeCards"][number];
+  pot: number;
+  currentBet: number;
+  toCall: number;
+  minRaiseSize: number;
+  actingSeat: number | null;
+  roundComplete: boolean;
+  legalActions: Action[];
   seats: SeatView[];
 };
 
 type TableSession = {
   seats: Seat[];
   hand: HandState | null;
+  betting: BettingState | null;
 };
 
 // In-memory only: no cards or betting yet, and a reload does not have to
@@ -97,7 +114,7 @@ export function sitDown(db: DatabaseSync, userId: number): SitResult {
   }
   const newTab = tab - BUY_IN;
   setTab(db, userId, newTab);
-  sessions.set(userId, { seats: newSeats(), hand: null });
+  sessions.set(userId, { seats: newSeats(), hand: null, betting: null });
   return { ok: true, tab: newTab, stack: BUY_IN };
 }
 
@@ -117,7 +134,50 @@ export function leaveTable(db: DatabaseSync, userId: number): LeaveResult {
   return { ok: true, tab: newTab };
 }
 
-function handView(session: TableSession, hand: HandState): HandView {
+function syncStacks(session: TableSession): void {
+  if (!session.betting) {
+    return;
+  }
+  for (let i = 0; i < session.seats.length; i++) {
+    session.seats[i].stack = session.betting.seats[i].stack;
+  }
+}
+
+// Placeholder strategy for computer seats: always check if free, otherwise
+// call (for less, if the stack is short). Never bets, raises, or folds.
+// This is deliberately dumb — real hand-strength/position strategy is
+// feature 009 ("Computer opponents"). Without this, a hand dealt today
+// would stall forever on a computer's turn, since nothing else drives
+// their actions yet.
+function advanceComputerActions(session: TableSession): void {
+  while (
+    session.betting &&
+    session.betting.actingSeat !== null &&
+    session.seats[session.betting.actingSeat].kind === "computer"
+  ) {
+    const seat = session.betting.actingSeat;
+    const toCall =
+      session.betting.currentBet - session.betting.seats[seat].streetContribution;
+    const action: Action = toCall > 0 ? "call" : "check";
+    const result = applyAction(session.betting, seat, action);
+    if (!result.ok) {
+      // Unreachable in practice: check/call are always legal whenever this
+      // placeholder is invoked, by construction of the betting engine.
+      break;
+    }
+    session.betting = result.state;
+    syncStacks(session);
+  }
+}
+
+function handView(session: TableSession): HandView {
+  const hand = session.hand;
+  const betting = session.betting;
+  if (!hand || !betting) {
+    throw new Error("no active hand");
+  }
+  const humanBet = betting.seats[HUMAN_SEAT];
+  const toCall = Math.max(betting.currentBet - humanBet.streetContribution, 0);
   return {
     button: hand.button,
     smallBlindSeat: hand.smallBlindSeat,
@@ -125,10 +185,20 @@ function handView(session: TableSession, hand: HandState): HandView {
     street: hand.street,
     board: hand.board,
     holeCards: hand.holeCards[HUMAN_SEAT],
+    pot: betting.pot,
+    currentBet: betting.currentBet,
+    toCall,
+    minRaiseSize: betting.minRaiseSize,
+    actingSeat: betting.actingSeat,
+    roundComplete: betting.actingSeat === null,
+    legalActions: legalActions(betting, HUMAN_SEAT),
     seats: session.seats.map((seat, index) => ({
       index,
       kind: seat.kind,
       stack: seat.stack,
+      folded: betting.seats[index].folded,
+      allIn: betting.seats[index].allIn,
+      streetContribution: betting.seats[index].streetContribution,
     })),
   };
 }
@@ -160,8 +230,17 @@ export function startHand(
   for (const post of hand.blindsPosted) {
     session.seats[post.seat].stack -= post.amount;
   }
+  const startingSeat = (hand.bigBlindSeat + 1) % SEAT_COUNT;
+  session.betting = startBettingRound(
+    session.seats.map((s) => s.stack),
+    hand.blindsPosted,
+    startingSeat,
+    BIG_BLIND,
+    BIG_BLIND,
+  );
   session.hand = hand;
-  return { ok: true, view: handView(session, hand) };
+  advanceComputerActions(session);
+  return { ok: true, view: handView(session) };
 }
 
 export type CurrentHandResult =
@@ -176,5 +255,32 @@ export function currentHand(db: DatabaseSync, userId: number): CurrentHandResult
   if (!session.hand) {
     return { ok: false, reason: "no-hand" };
   }
-  return { ok: true, view: handView(session, session.hand) };
+  return { ok: true, view: handView(session) };
+}
+
+export type SubmitActionResult =
+  | { ok: true; view: HandView }
+  | { ok: false; reason: "not-seated" | "no-hand" | "illegal"; message?: string };
+
+export function submitAction(
+  db: DatabaseSync,
+  userId: number,
+  action: Action,
+  amount?: number,
+): SubmitActionResult {
+  const session = sessionsFor(db).get(userId);
+  if (!session) {
+    return { ok: false, reason: "not-seated" };
+  }
+  if (!session.hand || !session.betting) {
+    return { ok: false, reason: "no-hand" };
+  }
+  const result = applyAction(session.betting, HUMAN_SEAT, action, amount);
+  if (!result.ok) {
+    return { ok: false, reason: "illegal", message: result.reason };
+  }
+  session.betting = result.state;
+  syncStacks(session);
+  advanceComputerActions(session);
+  return { ok: true, view: handView(session) };
 }

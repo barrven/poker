@@ -14,13 +14,34 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { pingDb } from "./db.js";
+import type { Action } from "./poker/betting.js";
 import {
   currentHand,
   leaveTable,
   sitDown,
   startHand,
+  submitAction,
   tableStateFor,
 } from "./table.js";
+
+const ACTIONS: readonly Action[] = ["fold", "check", "call", "bet", "raise", "all-in"];
+
+function readAction(value: unknown): Action | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  return (ACTIONS as readonly string[]).includes(value) ? (value as Action) : undefined;
+}
+
+function readAmount(value: unknown): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    return undefined;
+  }
+  return value;
+}
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const MAX_BODY = 8192;
@@ -294,6 +315,41 @@ async function handle(
           ? "Sit down before starting a hand."
           : "No hand in progress.";
       sendJson(res, 400, { error: message });
+      return;
+    }
+    sendJson(res, 200, result.view);
+    return;
+  }
+
+  if (method === "POST" && pathOnly === "/api/hand/action") {
+    const user = currentUser(db, req);
+    if (!user) {
+      sendJson(res, 401, { error: "Authentication required" });
+      return;
+    }
+    const body = parseJsonObject(await readBody(req));
+    if (!body) {
+      sendJson(res, 400, { error: "Invalid request" });
+      return;
+    }
+    const action = readAction(body.action);
+    const amount = readAmount(body.amount);
+    if (!action) {
+      sendJson(res, 400, { error: "Invalid action." });
+      return;
+    }
+    const result = submitAction(db, user.id, action, amount);
+    if (!result.ok) {
+      if (result.reason === "not-seated" || result.reason === "no-hand") {
+        sendJson(res, 400, {
+          error:
+            result.reason === "not-seated"
+              ? "Sit down before starting a hand."
+              : "No hand in progress.",
+        });
+        return;
+      }
+      sendJson(res, 400, { error: result.message ?? "Illegal action." });
       return;
     }
     sendJson(res, 200, result.view);
