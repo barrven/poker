@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 4
-- **Phase:** accept
-- **Active feature:** 012-hand-history
+- **Phase:** implement
+- **Active feature:** 013-responsive-layout
 - **Last updated:** 2026-09-20
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — accepted 012-hand-history (accept and continue); active 013-responsive-layout; phase set to `implement`
 - 2026-09-20 — validated 012-hand-history (pass: typecheck/lint/build clean, 20 consecutive clean test runs after one isolated real-randomness flake, live curl walkthrough of won/lost/split + privacy + restart persistence, all 6 acceptance criteria checked); phase set to `accept`
 - 2026-09-20 — tested 012-hand-history (7 new tests in tests/hand-history.test.ts, 125/125 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 012-hand-history (hand_history SQLite table, /api/history, history toggle view); phase set to `test`

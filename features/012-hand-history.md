@@ -1,7 +1,7 @@
 ---
 id: 012
 title: Hand history
-status: accept
+status: done
 priority: medium
 iteration: 4
 ---
@@ -178,4 +178,9 @@ All criteria pass. `status: accept`, `STATE.md` phase set to `accept`.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-20 — User selected "Accept and continue" via AskUserQuestion
+after reviewing the summary (hand_history table + /api/history +
+history toggle view, all 6 acceptance criteria passing, validation
+results including the persistence-across-restart test). Decision:
+accepted. Slice continues with 013 (Phone-usable layout) next, the
+last feature in this iteration.

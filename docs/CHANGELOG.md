@@ -7,6 +7,13 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Hand history (features/012-hand-history.md)
+
+Every settled hand is now saved to your account: time, blinds, your
+hole cards, the board as dealt, the result (won/lost/split), and the
+chip change. Open "View hand history" from the table page to see your
+own past hands — nobody else's, and there's no export or leaderboard.
+
 ## 2026-09-20 — Readable table view (features/008-table-view.md)
 
 The table now shows whose turn it is, highlights the acting seat, and
