@@ -4,9 +4,9 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 2
-- **Phase:** accept
-- **Active feature:** 009-ai-opponents
-- **Last updated:** 2026-09-19
+- **Phase:** retro
+- **Active feature:** _none — slice complete_
+- **Last updated:** 2026-09-20
 
 ## Phases
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — accepted 009-ai-opponents; slice (014, 005-007, 009) complete; phase set to `retro`
 - 2026-09-19 — validated 009-ai-opponents (pass); phase set to `accept`
 - 2026-09-19 — implemented + tested 009-ai-opponents (real hand-strength/position AI, found+fixed 4 real engine bugs via stress testing, 105/105 tests); phase set to `validate`
 - 2026-09-19 — accepted 007-showdown-pots; active 009-ai-opponents; phase set to `implement`

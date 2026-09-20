@@ -1,7 +1,7 @@
 ---
 id: 009
 title: Computer opponents
-status: accept
+status: done
 priority: medium
 iteration: 2
 ---
@@ -253,4 +253,8 @@ Implementation Notes.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-20 — Accepted. User selected "Accept (slice complete → retro)"
+in response to the acceptance summary (all 5 acceptance criteria pass,
+project checks pass, plus 4 real engine bugs found and fixed via stress
+testing). This was the last feature in iteration 2's slice (014, 005,
+006, 007, 009); moving to `/retro`.

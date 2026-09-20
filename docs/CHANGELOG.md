@@ -7,6 +7,16 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Computer opponents (features/009-ai-opponents.md)
+
+The five computer seats now play with a real strategy based on hand
+strength, position, and pot odds, instead of always checking or
+calling. They fold weak hands, call reasonable ones, and bet or raise
+strong ones — a single recreational difficulty, no external service or
+solver involved. This closes out iteration 2's slice: the app now
+supports a full played-out hand of No-Limit Hold'em against opponents
+that actually react to their cards.
+
 ## 2026-09-19 — Showdown, pots, and hand ranking (features/007-showdown-pots.md)
 
 A hand now plays all the way through: dealing, betting on every street,

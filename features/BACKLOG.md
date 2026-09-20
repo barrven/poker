@@ -13,7 +13,7 @@
 | 005 | Deal a Hold'em hand | done | high | 2 | [005-deal-hand.md](005-deal-hand.md) |
 | 006 | Betting rounds and legal actions | done | high | 2 | [006-betting.md](006-betting.md) |
 | 007 | Showdown, pots, and hand ranking | done | high | 2 | [007-showdown-pots.md](007-showdown-pots.md) |
-| 009 | Computer opponents | accept | medium | 2 | [009-ai-opponents.md](009-ai-opponents.md) |
+| 009 | Computer opponents | done | medium | 2 | [009-ai-opponents.md](009-ai-opponents.md) |
 
 ## Done (prior iterations)
 
