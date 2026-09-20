@@ -73,6 +73,11 @@ type TableSession = {
   // not just sit/leave.
   handStartStack: number;
   result: SettlementResult | null;
+  // The seat that will be the button for the *next* hand dealt. Starts at
+  // 0 (a fresh sit), and rotates one seat clockwise after every hand this
+  // session deals (feature 010) — a new sit always starts a fresh table,
+  // so this is never carried across a leave/re-sit.
+  button: number;
 };
 
 // In-memory only: no cards or betting yet, and a reload does not have to
@@ -123,13 +128,13 @@ function newSeats(): Seat[] {
   ];
 }
 
-// A seat can only ever post what it has — without feature 010 (deferred)
-// to replace a busted computer's stack before the next deal, a seat in the
-// fixed SB/BB position (button rotation isn't implemented yet either)
-// could otherwise be asked to post a blind larger than its remaining
-// stack, driving it negative. Cap each post at the seat's actual stack (an
-// all-in blind), same as every other stack-affecting action in this
-// engine (call, bet, raise, all-in) already does.
+// A seat can only ever post what it has — a seat in the SB/BB position
+// with a very short stack (e.g. it busted last hand and hasn't been
+// replenished yet within this same deal) could otherwise be asked to post
+// a blind larger than its remaining stack, driving it negative. Cap each
+// post at the seat's actual stack (an all-in blind), same as every other
+// stack-affecting action in this engine (call, bet, raise, all-in)
+// already does.
 export function capBlindPosts(
   blindsPosted: { seat: number; amount: number }[],
   seats: Seat[],
@@ -138,6 +143,21 @@ export function capBlindPosts(
     seat: post.seat,
     amount: Math.min(post.amount, seats[post.seat].stack),
   }));
+}
+
+// A computer seat that busted in an earlier hand is replaced with a fresh
+// 200-chip stack before the next deal, so the table always stays six
+// seats with nobody stuck sitting out (feature 010, AC3). Computer
+// opponents aren't bound by the human's real bankroll — this is the one
+// place new chips enter the table rather than moving between seats.
+// Mutates `seats` in place (consistent with the rest of this module's
+// seat bookkeeping, e.g. blind/bet deduction).
+export function replenishBustedComputers(seats: Seat[]): void {
+  for (const seat of seats) {
+    if (seat.kind === "computer" && seat.stack <= 0) {
+      seat.stack = BUY_IN;
+    }
+  }
 }
 
 export type SitResult =
@@ -161,6 +181,7 @@ export function sitDown(db: DatabaseSync, userId: number): SitResult {
     betting: null,
     handStartStack: 0,
     result: null,
+    button: 0,
   });
   return { ok: true, tab: newTab, stack: BUY_IN };
 }
@@ -376,15 +397,7 @@ function handView(session: TableSession): HandView {
 
 export type StartHandResult =
   | { ok: true; view: HandView }
-  | { ok: false; reason: "not-seated" | "hand-in-progress" };
-
-// The button starts at seat 0 for a player's first hand at a table — there
-// is no rotation history yet (button rotation across hands is feature 010,
-// which is deferred), so any fixed, documented starting seat is a
-// reasonable default. `dealHand` itself is exercised directly with every
-// button position in tests, independent of this default. Every hand dealt
-// this session reuses the same fixed button for the same reason.
-const FIRST_HAND_BUTTON = 0;
+  | { ok: false; reason: "not-seated" | "hand-in-progress" | "felted" };
 
 export function startHand(
   db: DatabaseSync,
@@ -398,12 +411,21 @@ export function startHand(
   if (session.hand && !session.result) {
     return { ok: false, reason: "hand-in-progress" };
   }
+  // A player with no table stack can't be dealt into a hand — they must
+  // rebuy (feature 011) or leave first (AC2).
+  if (session.seats[HUMAN_SEAT].stack <= 0) {
+    return { ok: false, reason: "felted" };
+  }
   session.hand = null;
   session.betting = null;
   session.result = null;
   session.handStartStack = session.seats[HUMAN_SEAT].stack;
 
-  const hand = dealHand(FIRST_HAND_BUTTON, rng);
+  replenishBustedComputers(session.seats);
+
+  const button = session.button;
+  session.button = (button + 1) % SEAT_COUNT;
+  const hand = dealHand(button, rng);
   const postedBlinds = capBlindPosts(hand.blindsPosted, session.seats);
   for (const post of postedBlinds) {
     session.seats[post.seat].stack -= post.amount;

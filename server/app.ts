@@ -295,6 +295,12 @@ async function handle(
         sendJson(res, 400, { error: "Sit down before starting a hand." });
         return;
       }
+      if (result.reason === "felted") {
+        sendJson(res, 400, {
+          error: "Add chips to your table stack before starting a new hand.",
+        });
+        return;
+      }
       sendJson(res, 409, { error: "A hand is already in progress." });
       return;
     }

@@ -66,6 +66,34 @@ type View =
 
 let view: View = { kind: "loading" };
 
+// The next hand starts automatically once a hand settles (feature 010,
+// AC1) — no click required. A few seconds' pause lets the human actually
+// see the result (who won, the showdown reveal) before it advances.
+const AUTO_DEAL_DELAY_MS = 3000;
+let autoDealTimer: ReturnType<typeof setTimeout> | undefined;
+
+function clearAutoDeal(): void {
+  if (autoDealTimer !== undefined) {
+    clearTimeout(autoDealTimer);
+    autoDealTimer = undefined;
+  }
+}
+
+function scheduleAutoDeal(hand: HandView | undefined): void {
+  const canAutoDeal = hand?.result && hand.seats[0].stack > 0;
+  if (!canAutoDeal) {
+    clearAutoDeal();
+    return;
+  }
+  if (autoDealTimer !== undefined) {
+    return; // already scheduled for this settled hand
+  }
+  autoDealTimer = setTimeout(() => {
+    autoDealTimer = undefined;
+    void onDeal();
+  }, AUTO_DEAL_DELAY_MS);
+}
+
 function hasSitControl(root: HTMLElement): boolean {
   return Boolean(
     root.querySelector("[data-sit], #sit, button.sit, input[name='sit']"),
@@ -207,6 +235,7 @@ function render(): void {
   }
 
   if (view.kind === "signed-in") {
+    scheduleAutoDeal(view.hand);
     const error = view.error
       ? `<p class="status" data-state="error">${escapeHtml(view.error)}</p>`
       : "";
@@ -334,7 +363,7 @@ function renderHand(hand: HandView): string {
   const boardText = hand.board.length ? hand.board.join(" ") : "—";
   const isHumanTurn = hand.actingSeat === 0 && hand.legalActions.length > 0;
   const actionArea = hand.result
-    ? renderSettlement(hand.result)
+    ? renderSettlement(hand.result, hand.seats[0].stack)
     : isHumanTurn
       ? renderActionControls(hand)
       : `<p class="status" data-state="pending">${hand.roundComplete ? "Betting round complete." : "Waiting for other players…"}</p>`;
@@ -355,7 +384,7 @@ function seatLabel(seat: number): string {
   return seat === 0 ? "You" : `Computer ${seat}`;
 }
 
-function renderSettlement(result: SettlementResult): string {
+function renderSettlement(result: SettlementResult, humanStack: number): string {
   const winnersText = result.winners
     .map((w) => `${escapeHtml(seatLabel(w.seat))} +${formatChips(w.delta)}`)
     .join(", ");
@@ -371,11 +400,21 @@ function renderSettlement(result: SettlementResult): string {
         )
         .join("")}</ul>`
     : "";
+  // The next hand deals itself automatically a few seconds after
+  // settlement (feature 010) — the button below is an optional way to
+  // skip the wait, not a requirement to continue. A player with no table
+  // stack left can't be dealt into another hand (rebuying is feature 011,
+  // not shipped yet); they can still leave to settle their tab.
+  const nextHand =
+    humanStack > 0
+      ? `<p class="status" data-state="pending" data-next-hand>Next hand starting…</p>
+         <p><button type="button" id="deal" data-deal>Deal next hand now</button></p>`
+      : `<p class="status" data-state="error" data-felted>You're out of chips at the table. Leave to settle your tab (rebuying is coming soon).</p>`;
   return `
     <div data-settlement>
       <p data-result>${escapeHtml(headline)}</p>
       ${revealed}
-      <p><button type="button" id="deal" data-deal>Deal next hand</button></p>
+      ${nextHand}
     </div>
   `;
 }
@@ -498,6 +537,7 @@ async function onLogin(form: HTMLFormElement): Promise<void> {
 }
 
 async function onLogout(): Promise<void> {
+  clearAutoDeal();
   await api("/api/logout", { method: "POST", body: "{}" });
   view = { kind: "guest", error: "" };
   render();
@@ -527,6 +567,7 @@ async function onLeave(): Promise<void> {
   if (view.kind !== "signed-in") {
     return;
   }
+  clearAutoDeal();
   const response = await api("/api/leave", { method: "POST", body: "{}" });
   if (!response.ok) {
     view = { ...view, error: await readError(response) };
