@@ -9,7 +9,6 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 016 | Poker table layout (oval seating) | accept | high | 5 | [016-table-layout.md](016-table-layout.md) |
 | 017 | Standard login/register flow | backlog | medium | 5 | [017-login-register-flow.md](017-login-register-flow.md) |
 | 018 | Responsive app-shell dashboard | backlog | medium | 5 | [018-dashboard-shell.md](018-dashboard-shell.md) |
 
@@ -38,6 +37,7 @@ work per the user's stated priority. -->
 | 012 | Hand history | done | medium | 4 | [012-hand-history.md](012-hand-history.md) |
 | 013 | Phone-usable layout | done | low | 4 | [013-responsive-layout.md](013-responsive-layout.md) |
 | 015 | Card images for hole and community cards | done | high | 5 | [015-card-images.md](015-card-images.md) |
+| 016 | Poker table layout (oval seating) | done | high | 5 | [016-table-layout.md](016-table-layout.md) |
 
 <!--
 Status values: backlog | implementing | testing | validating | accept | done | blocked | deferred

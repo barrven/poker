@@ -1,7 +1,7 @@
 ---
 id: 016
 title: Poker table layout (oval seating)
-status: accept
+status: done
 priority: high
 iteration: 5
 ---
@@ -280,3 +280,8 @@ produced a portrait-squished shape instead of a real poker table's
 landscape proportions. Fixed (see updated Implementation Notes below)
 and re-verified visually via real screenshots this time, not just
 computed geometry — see updated Validation Notes.
+
+2026-09-20 — After the fix and re-validation (real headless-Chrome
+screenshots confirming a wide, non-overlapping oval at both desktop and
+phone width), user was asked again via AskUserQuestion: **"Accept and
+continue."** Slice continues with 017-login-register-flow next.

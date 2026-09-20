@@ -7,6 +7,18 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Poker table layout (oval seating) (features/016-table-layout.md)
+
+The table now looks like an actual poker table: at desktop width, the
+human and five computer seats sit arranged around a wide green oval
+instead of stacked in a plain list, with a dealer button/small-blind/
+big-blind shown as small colored badges and stacks, bets, and the pot
+marked with a simple poker-chip icon instead of bare numbers. At phone
+width the seats fall back to a compact two-column grid (still no felt
+losses — same information, just not curved) since six labeled seats
+don't fit around a true ellipse on a small screen. Purely visual — no
+change to betting, hand logic, or what information is shown.
+
 ## 2026-09-20 — Card images for hole and community cards (features/015-card-images.md)
 
 Hole cards and the board now show real card artwork instead of text
