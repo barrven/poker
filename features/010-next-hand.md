@@ -1,7 +1,7 @@
 ---
 id: 010
 title: Next hand and 6-handed table
-status: validating
+status: accept
 priority: medium
 iteration: 3
 ---
@@ -16,15 +16,15 @@ resume after a refresh.
 
 ## Acceptance Criteria
 
-- [ ] After settlement, if the human's table stack is greater than 0,
+- [x] After settlement, if the human's table stack is greater than 0,
       a new hand starts without the human clicking "deal" (button
       moved one seat clockwise from the previous hand).
-- [ ] If the human's table stack is 0, a new hand does not start until
+- [x] If the human's table stack is 0, a new hand does not start until
       they rebuy or leave (rebuy is a later feature).
-- [ ] A computer seat whose stack reaches 0 is replaced with a new
+- [x] A computer seat whose stack reaches 0 is replaced with a new
       200-chip computer stack before the next hand. The table remains
       six seats, no empties.
-- [ ] Refreshing during a hand does not have to restore that hand; the
+- [x] Refreshing during a hand does not have to restore that hand; the
       next sit is a new table. Tab and history (once history exists)
       reflect the last fully settled hand.
 
@@ -85,11 +85,11 @@ messaging).
 
 ## Test Notes
 
-New `tests/next-hand.test.ts` (5 tests). Corrected one existing test
+New `tests/next-hand.test.ts` (4 tests). Corrected one existing test
 (`tests/showdown.test.ts`'s "a new hand can be dealt after the previous
 one settles", which predated the felted guard and unconditionally
-expected 200) and one stale button-text assertion. `npm test` — 110/110
-total (105 from before + 5 new), re-run 20x consecutively with zero
+expected 200) and one stale button-text assertion. `npm test` — 109/109
+total (105 from before + 4 new), re-run 20x consecutively with zero
 failures (real `Math.random` dealing throughout, as with every other
 gameplay test file).
 
@@ -138,7 +138,45 @@ wording "rebuy is a later feature").
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-20 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: pass
+- typecheck: pass
+- build: pass (bundle hash changed from 009's — correctly, the
+  auto-deal/felted-messaging UI is a real frontend change this time)
+- tests: pass, `npm test` re-run 3x here plus 20x during `/test` —
+  109/109 every time, real (unseeded) dealing throughout
+
+Live walkthrough already done during `/implement` (see Test Notes):
+button progressed 0→1→2 across three real hands; a genuine busted-
+computer scenario was found and the following hand's deal showed that
+seat restored to exactly 200; drove a human to 0 via repeated all-in
+play and confirmed `/api/hand/start` correctly refused.
+
+1. **Pass.** Button rotates `(previous + 1) % 6` every hand
+   (`tests/next-hand.test.ts`, deterministic; live, 0→1→2 across three
+   real hands). No new-hand click required: the frontend schedules
+   `/api/hand/start` automatically 3 seconds after a settled hand
+   renders (`scheduleAutoDeal()`), independent of any human action.
+2. **Pass.** A stackless human cannot start a new hand —
+   `startHand()`'s "felted" guard, tested both directly (probabilistic
+   all-in stress test, 50-hand budget) and live. `POST /api/leave`
+   remains available while felted (also tested).
+3. **Pass.** `replenishBustedComputers()` resets exactly the busted
+   computer seats to 200, leaving the human and solvent seats untouched
+   — direct unit test, plus a live-found real bust scenario confirming
+   the actual next deal.
+4. **Pass — by inspection, no new code.** Session state already
+   persists in-memory across requests (004/005's precedent) and a leave
+   always creates a fresh session (`sitDown()`'s `newSeats()` + `button:
+   0`); Implementation Notes records why no new test was needed here
+   rather than re-deriving 004/005's own coverage.
+
+No new deviations beyond what's recorded in Implementation Notes (the
+chip-conservation invariant from 009's stress testing no longer holds
+globally once a computer is replenished — documented there, not a
+regression).
 
 ## Acceptance Log
 
