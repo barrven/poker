@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 3
-- **Phase:** features
-- **Active feature:** _none — slice complete_
+- **Phase:** implement
+- **Active feature:** 010-next-hand
 - **Last updated:** 2026-09-20
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — scheduled iteration 3 slice (010, 011); deferred 008/012/013; active 010-next-hand; phase set to `implement`
 - 2026-09-20 — spec confirmed for iteration 3 (revisions already applied by retro, no further change); phase set to `features`
 - 2026-09-20 — retro (iteration 2): spec revised (ESLint wording fixed, AI-strength open question updated); more to build; outer iteration bumped to 3; phase set to `spec`
 - 2026-09-20 — accepted 009-ai-opponents; slice (014, 005-007, 009) complete; phase set to `retro`

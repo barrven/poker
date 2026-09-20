@@ -1,9 +1,9 @@
 ---
 id: 011
 title: Rebuy and play-money top-up
-status: deferred
+status: backlog
 priority: medium
-iteration: later
+iteration: 3
 ---
 
 ## Description

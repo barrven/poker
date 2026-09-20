@@ -5,15 +5,12 @@
 > "active" feature (the one currently in flight) is always named in
 > `STATE.md`, not just here.
 
-## Iteration 2 (current slice)
+## Iteration 3 (current slice)
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 014 | Lint tooling | done | high | 2 | [014-lint-setup.md](014-lint-setup.md) |
-| 005 | Deal a Hold'em hand | done | high | 2 | [005-deal-hand.md](005-deal-hand.md) |
-| 006 | Betting rounds and legal actions | done | high | 2 | [006-betting.md](006-betting.md) |
-| 007 | Showdown, pots, and hand ranking | done | high | 2 | [007-showdown-pots.md](007-showdown-pots.md) |
-| 009 | Computer opponents | done | medium | 2 | [009-ai-opponents.md](009-ai-opponents.md) |
+| 010 | Next hand and 6-handed table | backlog | medium | 3 | [010-next-hand.md](010-next-hand.md) |
+| 011 | Rebuy and play-money top-up | backlog | medium | 3 | [011-rebuy-topup.md](011-rebuy-topup.md) |
 
 ## Done (prior iterations)
 
@@ -23,14 +20,17 @@
 | 002 | Register, log in, and log out | done | high | 1 | [002-auth.md](002-auth.md) |
 | 003 | Running tab | done | high | 1 | [003-running-tab.md](003-running-tab.md) |
 | 004 | Sit down and leave the table | done | high | 1 | [004-sit-table.md](004-sit-table.md) |
+| 014 | Lint tooling | done | high | 2 | [014-lint-setup.md](014-lint-setup.md) |
+| 005 | Deal a Hold'em hand | done | high | 2 | [005-deal-hand.md](005-deal-hand.md) |
+| 006 | Betting rounds and legal actions | done | high | 2 | [006-betting.md](006-betting.md) |
+| 007 | Showdown, pots, and hand ranking | done | high | 2 | [007-showdown-pots.md](007-showdown-pots.md) |
+| 009 | Computer opponents | done | medium | 2 | [009-ai-opponents.md](009-ai-opponents.md) |
 
 ## Deferred (later)
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
 | 008 | Readable table view | deferred | medium | later | [008-table-view.md](008-table-view.md) |
-| 010 | Next hand and 6-handed table | deferred | medium | later | [010-next-hand.md](010-next-hand.md) |
-| 011 | Rebuy and play-money top-up | deferred | medium | later | [011-rebuy-topup.md](011-rebuy-topup.md) |
 | 012 | Hand history | deferred | medium | later | [012-hand-history.md](012-hand-history.md) |
 | 013 | Phone-usable layout | deferred | low | later | [013-responsive-layout.md](013-responsive-layout.md) |
 

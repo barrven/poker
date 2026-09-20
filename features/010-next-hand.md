@@ -1,9 +1,9 @@
 ---
 id: 010
 title: Next hand and 6-handed table
-status: deferred
+status: backlog
 priority: medium
-iteration: later
+iteration: 3
 ---
 
 ## Description
