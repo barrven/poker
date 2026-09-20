@@ -14,6 +14,7 @@ type Session = {
 };
 
 const BUY_IN = 200;
+const TOP_UP_AMOUNT = 1000;
 const COMPUTER_SEATS = 5;
 
 type Action = "fold" | "check" | "call" | "bet" | "raise" | "all-in";
@@ -241,7 +242,7 @@ function render(): void {
       : "";
     const table = view.seated
       ? view.hand
-        ? renderHand(view.hand)
+        ? renderHand(view.hand, view.tab)
         : `${renderDealControl()}${renderTable(view.stack)}`
       : renderSitControl(view.tab);
     app.innerHTML = `
@@ -264,6 +265,12 @@ function render(): void {
     });
     app.querySelector("#deal")?.addEventListener("click", () => {
       void onDeal();
+    });
+    app.querySelector("#rebuy")?.addEventListener("click", () => {
+      void onRebuy();
+    });
+    app.querySelector("#topup")?.addEventListener("click", () => {
+      void onTopUp();
     });
     app
       .querySelectorAll<HTMLButtonElement>("[data-action]")
@@ -343,7 +350,7 @@ function renderDealControl(): string {
   return `<p><button type="button" id="deal" data-deal>Deal hand</button></p>`;
 }
 
-function renderHand(hand: HandView): string {
+function renderHand(hand: HandView, tab: number): string {
   const seatsHtml = hand.seats
     .map((seat) => {
       const label = seat.kind === "human" ? "You" : `Computer ${seat.index}`;
@@ -363,7 +370,7 @@ function renderHand(hand: HandView): string {
   const boardText = hand.board.length ? hand.board.join(" ") : "—";
   const isHumanTurn = hand.actingSeat === 0 && hand.legalActions.length > 0;
   const actionArea = hand.result
-    ? renderSettlement(hand.result, hand.seats[0].stack)
+    ? renderSettlement(hand.result, hand.seats[0].stack, tab)
     : isHumanTurn
       ? renderActionControls(hand)
       : `<p class="status" data-state="pending">${hand.roundComplete ? "Betting round complete." : "Waiting for other players…"}</p>`;
@@ -384,7 +391,7 @@ function seatLabel(seat: number): string {
   return seat === 0 ? "You" : `Computer ${seat}`;
 }
 
-function renderSettlement(result: SettlementResult, humanStack: number): string {
+function renderSettlement(result: SettlementResult, humanStack: number, tab: number): string {
   const winnersText = result.winners
     .map((w) => `${escapeHtml(seatLabel(w.seat))} +${formatChips(w.delta)}`)
     .join(", ");
@@ -403,13 +410,18 @@ function renderSettlement(result: SettlementResult, humanStack: number): string 
   // The next hand deals itself automatically a few seconds after
   // settlement (feature 010) — the button below is an optional way to
   // skip the wait, not a requirement to continue. A player with no table
-  // stack left can't be dealt into another hand (rebuying is feature 011,
-  // not shipped yet); they can still leave to settle their tab.
+  // stack left can't be dealt into another hand until they rebuy (needs
+  // 200+ on the tab) or, if the tab can't cover that, top up first
+  // (feature 011); leaving remains available throughout.
   const nextHand =
     humanStack > 0
       ? `<p class="status" data-state="pending" data-next-hand>Next hand starting…</p>
          <p><button type="button" id="deal" data-deal>Deal next hand now</button></p>`
-      : `<p class="status" data-state="error" data-felted>You're out of chips at the table. Leave to settle your tab (rebuying is coming soon).</p>`;
+      : tab >= BUY_IN
+        ? `<p class="status" data-state="error" data-felted>You're out of chips at the table.</p>
+           <p><button type="button" id="rebuy" data-rebuy>Rebuy ${formatChips(BUY_IN)} chips</button></p>`
+        : `<p class="status" data-state="error" data-felted>You're out of chips at the table, and your tab can't cover a rebuy.</p>
+           <p><button type="button" id="topup" data-topup>Top up ${formatChips(TOP_UP_AMOUNT)} play-money chips</button></p>`;
   return `
     <div data-settlement>
       <p data-result>${escapeHtml(headline)}</p>
@@ -601,6 +613,50 @@ async function onDeal(): Promise<void> {
     return;
   }
   view = { ...view, hand, error: "" };
+  render();
+}
+
+async function onRebuy(): Promise<void> {
+  if (view.kind !== "signed-in") {
+    return;
+  }
+  const response = await api("/api/table/rebuy", { method: "POST", body: "{}" });
+  if (!response.ok) {
+    view = { ...view, error: await readError(response) };
+    render();
+    return;
+  }
+  const session = parseSession(await response.json());
+  if (!session) {
+    view = { ...view, error: "Something went wrong." };
+    render();
+    return;
+  }
+  // Back to a fresh 200-chip stack with no hand in progress — same
+  // post-state as a brand new sit.
+  view = { kind: "signed-in", ...session, hand: undefined, error: "" };
+  render();
+}
+
+async function onTopUp(): Promise<void> {
+  if (view.kind !== "signed-in") {
+    return;
+  }
+  const response = await api("/api/tab/topup", { method: "POST", body: "{}" });
+  if (!response.ok) {
+    view = { ...view, error: await readError(response) };
+    render();
+    return;
+  }
+  const session = parseSession(await response.json());
+  if (!session) {
+    view = { ...view, error: "Something went wrong." };
+    render();
+    return;
+  }
+  // Top-up only raises the tab — still felted at the table until an
+  // explicit rebuy, so the settled-hand/felted view stays as-is.
+  view = { ...view, tab: session.tab, error: "" };
   render();
 }
 

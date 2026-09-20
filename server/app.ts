@@ -18,10 +18,12 @@ import type { Action } from "./poker/betting.js";
 import {
   currentHand,
   leaveTable,
+  rebuy,
   sitDown,
   startHand,
   submitAction,
   tableStateFor,
+  topUp,
 } from "./table.js";
 
 const ACTIONS: readonly Action[] = ["fold", "check", "call", "bet", "raise", "all-in"];
@@ -359,6 +361,38 @@ async function handle(
       return;
     }
     sendJson(res, 200, result.view);
+    return;
+  }
+
+  if (method === "POST" && pathOnly === "/api/table/rebuy") {
+    const user = currentUser(db, req);
+    if (!user) {
+      sendJson(res, 401, { error: "Authentication required" });
+      return;
+    }
+    const result = rebuy(db, user.id);
+    if (!result.ok) {
+      const messages: Record<typeof result.reason, string> = {
+        "not-seated": "Sit down before rebuying.",
+        "hand-in-progress": "Finish the current hand before rebuying.",
+        "not-felted": "You still have chips on the table.",
+        "insufficient-tab": "Your tab doesn't cover a 200-chip rebuy — top up first.",
+      };
+      sendJson(res, 400, { error: messages[result.reason] });
+      return;
+    }
+    sendJson(res, 200, userPayload(db, { ...user, tab: result.tab }));
+    return;
+  }
+
+  if (method === "POST" && pathOnly === "/api/tab/topup") {
+    const user = currentUser(db, req);
+    if (!user) {
+      sendJson(res, 401, { error: "Authentication required" });
+      return;
+    }
+    const result = topUp(db, user.id);
+    sendJson(res, 200, userPayload(db, { ...user, tab: result.tab }));
     return;
   }
 

@@ -202,6 +202,46 @@ export function leaveTable(db: DatabaseSync, userId: number): LeaveResult {
   return { ok: true, tab: newTab };
 }
 
+export const TOP_UP_AMOUNT = 1000;
+
+export type RebuyResult =
+  | { ok: true; tab: number; stack: number }
+  | {
+      ok: false;
+      reason: "not-seated" | "hand-in-progress" | "not-felted" | "insufficient-tab";
+    };
+
+export function rebuy(db: DatabaseSync, userId: number): RebuyResult {
+  const session = sessionsFor(db).get(userId);
+  if (!session) {
+    return { ok: false, reason: "not-seated" };
+  }
+  if (session.hand && !session.result) {
+    return { ok: false, reason: "hand-in-progress" };
+  }
+  if (session.seats[HUMAN_SEAT].stack !== 0) {
+    return { ok: false, reason: "not-felted" };
+  }
+  const tab = tabOf(db, userId);
+  if (tab < BUY_IN) {
+    return { ok: false, reason: "insufficient-tab" };
+  }
+  const newTab = tab - BUY_IN;
+  setTab(db, userId, newTab);
+  session.seats[HUMAN_SEAT].stack = BUY_IN;
+  return { ok: true, tab: newTab, stack: BUY_IN };
+}
+
+// No seating or stack precondition — a low tab can happen whether or not
+// the player is currently at the table (AC3 doesn't gate this on being
+// felted, only describes that scenario), and there's no real-money
+// ceiling to protect against over-topping-up.
+export function topUp(db: DatabaseSync, userId: number): { tab: number } {
+  const newTab = tabOf(db, userId) + TOP_UP_AMOUNT;
+  setTab(db, userId, newTab);
+  return { tab: newTab };
+}
+
 function syncStacks(session: TableSession): void {
   if (!session.betting) {
     return;
