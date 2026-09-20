@@ -7,6 +7,16 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Rebuy and play-money top-up (features/011-rebuy-topup.md)
+
+If you bust at the table, you can now rebuy 200 chips straight from
+your tab, or top up your tab by 1,000 play-money chips first if it
+can't cover a rebuy. Leaving the table remains available at any time
+too. Still play money only — no payment form, no currency, no cash-out.
+This closes out iteration 3: the full original product vision (deal,
+bet, showdown, real computer opponents, continuous play, and recovering
+from a bust) is now built.
+
 ## 2026-09-20 — Next hand and 6-handed table (features/010-next-hand.md)
 
 After a hand settles, the next one deals itself automatically a few

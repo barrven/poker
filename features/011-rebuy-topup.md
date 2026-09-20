@@ -1,7 +1,7 @@
 ---
 id: 011
 title: Rebuy and play-money top-up
-status: accept
+status: done
 priority: medium
 iteration: 3
 ---
@@ -179,4 +179,8 @@ having no seating/felted precondition, by design, not an oversight).
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-20 — Accepted. User selected "Accept (slice complete → retro)"
+in response to the acceptance summary (all 5 acceptance criteria pass,
+project checks pass, a real pre-existing test bug found and fixed along
+the way). This was the last feature in iteration 3's slice (010, 011);
+moving to `/retro`.
