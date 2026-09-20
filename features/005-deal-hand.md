@@ -1,7 +1,7 @@
 ---
 id: 005
 title: Deal a Hold'em hand
-status: accept
+status: done
 priority: high
 iteration: 2
 ---
@@ -259,3 +259,6 @@ just via the API/tests, for the feature to be genuinely usable. Sending
 back to `/implement` for a minimal UI addition (see Implementation Notes
 for the planned scope — a "Deal hand" trigger and a minimal in-progress
 display, not the full table view 008 owns).
+
+2026-09-19 — Accepted. User selected "Accept and continue" after the
+Deal-hand UI fix and re-validation. Moving on to 006-betting.

@@ -7,6 +7,17 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-19 — Deal a Hold'em hand (features/005-deal-hand.md)
+
+A seated player can deal a hand with a "Deal hand" button: a shuffled
+52-card deck, a dealer button, small/big blinds (1/2) posted
+automatically from the correct seats, and two private hole cards per
+seat. The app shows the street, board, the player's own hole cards, and
+every seat's stack with dealer/blind markers. Community cards
+(flop/turn/river) come in the standard sequence at the engine level;
+live betting-driven advancement is a later feature. Only the player's
+own hole cards are ever sent to their client.
+
 ## 2026-09-19 — Lint tooling (features/014-lint-setup.md)
 
 `npm run lint` now exists and fails the build on real problems, covering
