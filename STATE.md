@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 4
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 008-table-view
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — validated 008-table-view (pass: typecheck/lint/build/118 tests clean, live curl walkthrough of action log + turn indicator, all 7 acceptance criteria checked); phase set to `accept`
 - 2026-09-20 — tested 008-table-view (3 new tests in tests/action-log.test.ts, 118/118 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 008-table-view (action log, turn indicator, acting-seat highlight, structural CSS); phase set to `test`
 - 2026-09-20 — scheduled iteration 4 slice (008, 012, 013 — the entire remaining backlog); active 008-table-view; phase set to `implement`

@@ -1,7 +1,7 @@
 ---
 id: 008
 title: Readable table view
-status: validating
+status: accept
 priority: medium
 iteration: 4
 ---
@@ -15,18 +15,18 @@ hidden until showdown (or stay mucked on a fold-win).
 
 ## Acceptance Criteria
 
-- [ ] The human's two hole cards are always visible to the human while
+- [x] The human's two hole cards are always visible to the human while
       they are in a hand (and until the hand is over).
-- [ ] The board shows 0, 3, 4, or 5 community cards matching the
+- [x] The board shows 0, 3, 4, or 5 community cards matching the
       current street.
-- [ ] Every seat shows a stack amount. The pot amount is visible.
-- [ ] The dealer button, blinds (1/2), whose turn it is, and the
+- [x] Every seat shows a stack amount. The pot amount is visible.
+- [x] The dealer button, blinds (1/2), whose turn it is, and the
       human's running tab are visible.
-- [ ] Recent actions (fold / check / call / bet / raise / all-in and
+- [x] Recent actions (fold / check / call / bet / raise / all-in and
       amounts) are visible for the current hand.
-- [ ] Opponents' hole cards are not shown until a showdown; on a
+- [x] Opponents' hole cards are not shown until a showdown; on a
       fold-win they are not shown (mucked).
-- [ ] Action controls appear when it is the human's turn and are not
+- [x] Action controls appear when it is the human's turn and are not
       offered when it is not.
 
 ## Implementation Notes
@@ -100,7 +100,45 @@ feature touching hand/betting state, same as every prior feature).
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+Checks: `npm run typecheck` clean, `npm run lint` clean (32 files, 0
+warnings/errors), `npm run build` succeeded (client bundle rebuilt:
+`index-B0P9usUh.js` / `index-Cg2Ucqce.css`, matching implement-stage
+verification that real frontend code shipped). `npm test`: 118/118,
+run twice more here (6 total runs across implement/test/validate) with
+no flakes.
+
+Live walkthrough (isolated server, scratchpad data dir, curl): sat a
+human, started a hand, confirmed the `/api/hand/start` response's
+`actionLog` matched the real preflop action taken by seats 3 (raise),
+4 (fold), 5 (call) in order with correct amounts, and `actingSeat: 0`
+correctly pointed back at the human. Submitted a human `call`, and the
+following response's `actionLog` had the human's entry appended (not
+rewritten) followed by several more real computer actions, still in
+order — confirms recordAction() runs both on the human path
+(submitAction) and the computer path (advanceComputerActions).
+
+Acceptance criteria:
+- Hole cards always visible while in a hand — pass (pre-existing from
+  005, re-verified in the live walkthrough: `holeCards` present and
+  unchanged in every response).
+- Board shows 0/3/4/5 cards matching street — pass (pre-existing from
+  005/007, `tests/deal.test.ts` + `tests/showdown.test.ts`).
+- Every seat shows a stack, pot visible — pass (pre-existing, `seats[].stack`
+  / `pot` fields render in `renderHand`; unchanged this feature).
+- Button, blinds, whose turn, running tab visible — button/blinds
+  markers pre-existing (005); whose-turn is new this feature
+  (`data-turn`, `data-acting`) — pass, confirmed via `tests/action-log.test.ts`
+  and the live walkthrough; tab pre-existing (003).
+- Recent actions visible with amounts — pass, new this feature
+  (`actionLog` + `renderActionLog`), covered by
+  `tests/action-log.test.ts` and the live walkthrough.
+- Opponents' hole cards hidden until showdown / mucked on fold-win —
+  pass (pre-existing from 005/007, unaffected by this feature;
+  `tests/showdown.test.ts` still green).
+- Action controls only on the human's turn — pass (pre-existing from
+  006, `isHumanTurn` gate untouched by this feature).
+
+All criteria pass. `status: accept`, `STATE.md` phase set to `accept`.
 
 ## Acceptance Log
 
