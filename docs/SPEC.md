@@ -122,14 +122,20 @@ Explicitly out of scope, so `/features` doesn't invent work for it.
   required for v1.
 - Passwords hashed with a standard password hash (not reversible, not
   a single SHA).
-- Code is linted (ESLint, matching the TypeScript/Vite/Node stack) via an
-  `npm run lint` script that passes with no errors, alongside typecheck
-  and build.
+- Code is linted (a linter matching the TypeScript/Vite/Node stack) via
+  an `npm run lint` script that passes with no errors, alongside
+  typecheck and build. Currently Biome — `typescript-eslint` has a hard
+  version guard that refuses to run against this project's
+  `typescript@7.0.2` (the native/Go compiler), so ESLint specifically
+  isn't an option today.
 
 ## Open Questions
 
-- How strong should the default AI feel (tight-passive vs loose-aggressive),
-  and is a single difficulty enough?
+- A single recreational AI difficulty shipped in iteration 2 (hand
+  strength + position + pot odds, see features/009-ai-opponents.md) —
+  not yet play-tested/confirmed by the user. Revisit whether it feels
+  right (tight-passive vs loose-aggressive) once tried, and whether more
+  than one difficulty is wanted later.
 - Any table chrome beyond a readable felt (felt color, chip look, card
   backs) the user cares about up front?
 
@@ -148,3 +154,9 @@ _Appended by `/retro` — what changed about the spec itself and why._
   (`npm run lint`, ESLint) — every one of features 001-004's Validation
   Notes flagged the missing lint script/config as a gap; making it an
   explicit constraint so a future slice schedules setting it up
+- 2026-09-20 — retro (iteration 2): correct the lint constraint's wording
+  from "ESLint" to "a linter" (shipped as Biome in feature 014 — ESLint
+  itself is not an option against this project's `typescript@7.0.2`);
+  update the AI-strength Open Question to reflect that iteration 2
+  shipped a single recreational difficulty (feature 009), not yet
+  play-tested by the user
