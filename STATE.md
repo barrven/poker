@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 5
-- **Phase:** test
+- **Phase:** validate
 - **Active feature:** 017-login-register-flow
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — tested 017-login-register-flow (6 new tests in tests/login-register-flow.test.ts, 153/153 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 017-login-register-flow (guest view gained authView login/register sub-state, toggle links, failures keep the user on the same form; verified visually via headless-Chrome mockups and live curl against the real API); phase set to `test`
 - 2026-09-20 — accepted 016-table-layout (accept and continue, after one changes-requested round fixing the oval's proportions); active 017-login-register-flow; phase set to `implement`
 - 2026-09-20 — re-validated 016-table-layout (pass: typecheck/lint/build clean, 147/147 tests x3 runs, real headless-Chrome screenshots at desktop+phone width against the actual markup/CSS confirmed the wide oval, non-overlapping seats, badges, and chip icons; all 5 acceptance criteria checked and visually confirmed); phase set to `accept`

@@ -1,7 +1,7 @@
 ---
 id: 017
 title: Standard login/register flow
-status: testing
+status: validating
 priority: medium
 iteration: 5
 ---
@@ -74,6 +74,46 @@ correctly above the register form.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
+
+New file `tests/login-register-flow.test.ts` (6 tests, source-regex
+convention — no jsdom in this project):
+
+- Every guest-view construction site that should default to `"login"`
+  (initial load with no session, API-unreachable catch block, logout,
+  and a failed login) actually does — checked individually, not just
+  "authView appears somewhere" (AC1).
+- A failed registration's `authView` stays `"register"` — scanned
+  `onRegister`'s whole body for `authView: "login"` and asserted it's
+  never there (AC5's "existing error-surfacing" carried into the new
+  per-form state, not just "an error shows somewhere").
+- `render()` picks exactly one of `registerForm`/`loginForm` via a
+  ternary, with a regression guard against the old always-both-forms
+  concatenation (AC1).
+- Both forms carry the other's toggle button (`#show-login` inside
+  `registerForm`, `#show-register` inside `loginForm` — AC2/AC3), and
+  both click handlers only flip `authView` + `render()`, with an
+  explicit check that neither calls `api()`/`fetch` — confirms the
+  toggle is a pure client-side view change, not a hidden network
+  round-trip disguised as one.
+- Registration still lands on `kind: "signed-in"` on success (the AC4
+  choice made — signed in directly, not a "go log in" step).
+- A consolidated check that both forms' ids/fields and submit wiring
+  are untouched.
+
+Ran the full suite 4 consecutive times (153/153 each, stable).
+
+Deliberately not covered by new tests: the server-side auth guarantees
+AC5 also names (duplicate-username error, generic failed-login error,
+password hashing, session-survives-refresh) — all pre-existing,
+unmodified, and already covered by `tests/auth.test.ts`, which still
+passes unmodified (strong signal nothing there regressed). Also
+deliberately not covered: real click-driven DOM interaction (no
+jsdom/browser harness) — verified instead by building two standalone
+HTML files with the real login-view/register-view markup against the
+real `src/style.css` and screenshotting them with headless Chrome
+during `/implement` (see Implementation Notes) — both forms rendered
+correctly, exactly one at a time, with a working-looking toggle link
+and error placement.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
