@@ -7,6 +7,13 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Phone-usable layout (features/013-responsive-layout.md)
+
+Register, log in, the table, and hand history all work on a phone
+browser now, not just desktop: no horizontal scrolling, and every
+button and input is a comfortable size to tap. Desktop looks the same
+as before.
+
 ## 2026-09-20 — Hand history (features/012-hand-history.md)
 
 Every settled hand is now saved to your account: time, blinds, your

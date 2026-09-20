@@ -1,7 +1,7 @@
 ---
 id: 013
 title: Phone-usable layout
-status: accept
+status: done
 priority: low
 iteration: 4
 ---
@@ -180,4 +180,9 @@ All criteria pass. `status: accept`, `STATE.md` phase set to `accept`.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-20 — User selected "Accept" via AskUserQuestion after reviewing
+the summary (box-sizing reset, 44px touch targets, phone-padding media
+query, headless-Chrome walkthrough results at 375px and desktop, all 4
+acceptance criteria passing). Decision: accepted. This was the last
+feature in iteration 4's slice (008, 012, 013 all done) — `/retro` is
+next.
