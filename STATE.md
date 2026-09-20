@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 3
-- **Phase:** implement
+- **Phase:** validate
 - **Active feature:** 011-rebuy-topup
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — implemented + tested 011-rebuy-topup (rebuy/top-up, fixed a latent 009-era test bug, 115/115 tests); phase set to `validate`
 - 2026-09-20 — accepted 010-next-hand; active 011-rebuy-topup; phase set to `implement`
 - 2026-09-20 — validated 010-next-hand (pass); phase set to `accept`
 - 2026-09-20 — implemented + tested 010-next-hand (button rotation, felted guard, busted-computer replacement, auto-deal UI, 109/109 tests); phase set to `validate`

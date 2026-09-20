@@ -230,12 +230,20 @@ test("folding removes the human from the hand without changing their contributed
     };
     assert.equal(view.seats[0].folded, true);
     assert.equal(view.seats[0].stack, 200);
-    // With the human out, none of the five placeholder computers ever
-    // bets/raises/folds, so the hand runs itself all the way to a river
-    // showdown among them without any further human input.
-    assert.equal(view.street, "river");
+    // With the human out, the five remaining computers (real strategy,
+    // feature 009) play the rest of the hand out among themselves with
+    // no further human input — usually reaching a river showdown, but
+    // real hand-strength decisions mean they can also fold to each
+    // other, occasionally narrowing all the way down to one survivor
+    // (a "fold" result) before the river. Both are legitimate outcomes;
+    // this test only asserts the hand *settled* on its own, not which
+    // reason it settled for. (An earlier version of this test assumed
+    // the pre-009 always-check/call placeholder, which could never fold
+    // and so could only ever reach "showdown" — that assumption is
+    // false now and caused a rare, real flake once computers actually
+    // started folding.)
     assert.ok(view.result);
-    assert.equal(view.result?.reason, "showdown");
+    assert.ok(view.result?.reason === "showdown" || view.result?.reason === "fold");
     assert.ok((view.result?.winners.length ?? 0) > 0);
   } finally {
     await app.close();

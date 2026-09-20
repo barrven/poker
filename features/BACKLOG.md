@@ -10,7 +10,7 @@
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
 | 010 | Next hand and 6-handed table | done | medium | 3 | [010-next-hand.md](010-next-hand.md) |
-| 011 | Rebuy and play-money top-up | backlog | medium | 3 | [011-rebuy-topup.md](011-rebuy-topup.md) |
+| 011 | Rebuy and play-money top-up | validating | medium | 3 | [011-rebuy-topup.md](011-rebuy-topup.md) |
 
 ## Done (prior iterations)
 
