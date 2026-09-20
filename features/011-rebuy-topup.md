@@ -1,7 +1,7 @@
 ---
 id: 011
 title: Rebuy and play-money top-up
-status: validating
+status: accept
 priority: medium
 iteration: 3
 ---
@@ -15,18 +15,18 @@ not real money.
 
 ## Acceptance Criteria
 
-- [ ] When the human's table stack is 0 and the tab is at least 200,
+- [x] When the human's table stack is 0 and the tab is at least 200,
       they can rebuy 200: tab decreases by 200, table stack becomes
       200, and play can continue.
-- [ ] When the table stack is 0 they can leave instead of rebuying;
+- [x] When the table stack is 0 they can leave instead of rebuying;
       leave settles as in sit/leave (stack 0, tab unchanged by the
       leave itself).
-- [ ] When the tab is below 200, rebuy and sit are not allowed until a
+- [x] When the tab is below 200, rebuy and sit are not allowed until a
       top-up. The player can add 1,000 play-money chips to the tab.
       SQLite shows the new tab. They can then rebuy or sit.
-- [ ] Top-up is play money only: no payment form, no currency, no
+- [x] Top-up is play money only: no payment form, no currency, no
       cash-out.
-- [ ] Tab updates for rebuy and top-up are visible after reload.
+- [x] Tab updates for rebuy and top-up are visible after reload.
 
 ## Implementation Notes
 
@@ -134,7 +134,48 @@ above).
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-20 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: pass
+- typecheck: pass
+- build: pass (bundle hash changed from 010's — correctly, the real
+  rebuy/top-up UI is a genuine frontend change)
+- tests: pass, `npm test` — 115/115. Also re-run 20x consecutively
+  during `/test` (all clean) after fixing the latent 009-era test bug
+  this stage's stress-testing surfaced.
+
+Live walkthrough already done during `/implement` (see Test Notes): tab
+600→400 on a real rebuy (stack 0→200); tab drained to 50 via direct
+SQL, confirmed both `/api/sit` and `/api/table/rebuy` correctly refuse
+below 200; topped up 50→1050; confirmed `/api/table/rebuy` rejects with
+"You still have chips on the table." when not actually felted.
+
+1. **Pass.** Live and in `tests/rebuy-topup.test.ts`: rebuy debits
+   exactly 200 from the tab, sets the table stack to 200, and a new
+   hand can be dealt immediately after.
+2. **Pass.** `tests/rebuy-topup.test.ts`'s dedicated test: leaving while
+   felted settles with the tab unchanged by the leave itself (adding a
+   0 stack), reachable without any rebuy first.
+3. **Pass.** Live and tested: a tab below 200 blocks both `/api/sit` and
+   `/api/table/rebuy`; `/api/tab/topup` adds exactly 1,000 and SQLite
+   reflects it immediately; sitting/rebuying then succeeds.
+4. **Pass.** Combined source-text scan across `src/main.ts`, `server/app.ts`,
+   and `server/table.ts` for deposit/withdraw/cash-out/payment-processor
+   language — none present, extending 003's original tab-feature check
+   to this feature's new surface.
+5. **Pass.** Both actions persist directly to SQLite via the existing
+   `tabOf`/`setTab` path (no new persistence mechanism); confirmed via
+   direct `SELECT` in tests, not just the API response.
+
+Beyond the acceptance criteria: this stage's own stress testing found
+and fixed a real latent bug in a 009-era test (documented in
+Implementation/Test Notes) — the same discovery pattern 009 itself
+established, now paying off a second time on code it didn't touch
+directly.
+
+No new deviations beyond what's recorded in Implementation Notes (top-up
+having no seating/felted precondition, by design, not an oversight).
 
 ## Acceptance Log
 
