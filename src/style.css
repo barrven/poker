@@ -229,10 +229,13 @@ button {
   .table-oval {
     position: relative;
     margin: 1.25rem auto;
-    padding: 2.5rem 1rem;
+    padding: 1.5rem 1rem;
     width: 100%;
-    max-width: 30rem;
-    aspect-ratio: 4 / 5;
+    max-width: 33rem;
+    /* A real poker table is wide, not tall — 3:2 (matching a felt
+       table's actual proportions), not the narrow portrait shape an
+       earlier version of this rule mistakenly used. */
+    aspect-ratio: 3 / 2;
     border-radius: 50%;
   }
 
@@ -244,7 +247,7 @@ button {
     align-items: center;
     justify-content: center;
     gap: 0.15rem;
-    padding: 0 4rem;
+    padding: 0 4.5rem;
     margin: 0;
   }
 
@@ -256,43 +259,54 @@ button {
 
   [data-seats] li {
     position: absolute;
-    width: 8.5rem;
-    font-size: 0.85rem;
-    padding: 0.3rem 0.4rem;
+    width: 9rem;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.4rem;
     transform: translate(-50%, -50%);
   }
 
-  /* Human seat at the bottom (nearest the viewer), the rest spaced
-     around the ellipse — see the comment above for why the felt's width
-     is a known ~30rem/480px here, which is what these percentages (with
-     safe double-digit margins from every edge) are sized against. */
+  /* Card-back/revealed-card images inline in a seat box (feature 015)
+     are shrunk further here specifically — the default size is sized
+     for the standalone hole-cards/board row, not a compact seat box. */
+  [data-seats] .card-img {
+    width: 1.8rem;
+  }
+
+  /* Three seats across the top, three across the bottom (human at
+     bottom-center). Each seat-slot-N sits at a percentage chosen (not
+     eyeballed) so every seat box — at its real, checked width/height
+     budget — clears the felt's own edges and every other seat box on
+     at least one axis. See tests/table-layout.test.ts's geometry
+     tests, which recompute this from these exact values on every run;
+     changing a percentage or the box's width without rerunning them is
+     the way this silently breaks. */
   .seat-slot-1 {
     left: 50%;
-    top: 97%;
+    top: 78%;
   }
 
   .seat-slot-2 {
-    left: 20%;
+    left: 17%;
     top: 78%;
   }
 
   .seat-slot-3 {
-    left: 20%;
+    left: 17%;
     top: 22%;
   }
 
   .seat-slot-4 {
     left: 50%;
-    top: 3%;
+    top: 22%;
   }
 
   .seat-slot-5 {
-    left: 80%;
+    left: 83%;
     top: 22%;
   }
 
   .seat-slot-6 {
-    left: 80%;
+    left: 83%;
     top: 78%;
   }
 }

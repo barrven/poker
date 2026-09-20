@@ -1,7 +1,7 @@
 ---
 id: 016
 title: Poker table layout (oval seating)
-status: accept
+status: implementing
 priority: high
 iteration: 5
 ---
@@ -88,6 +88,52 @@ No live-browser visual check was possible this run (no Chrome extension
 connected at all — see Validation Notes); the geometry was checked by
 extracting and computing the actual CSS values in tests instead of by
 eye. Flagging this the same way feature 015 flagged its own AC5 gap.
+
+**Revision (post user feedback):** the shape above was wrong — `4/5`
+aspect-ratio makes a *portrait* ellipse (taller than wide), not a real
+poker table's landscape shape; the user caught this immediately from a
+screenshot. That choice was made to dodge a vertical-overlap risk in a
+4-row (top-center/upper-side/lower-side/bottom-center) hexagon layout,
+which was itself the wrong fix for the wrong problem.
+
+Real fix: `aspect-ratio: 3 / 2` (wide, matching an actual felt table and
+the user's reference image), `max-width` nudged from 30rem to 33rem
+(still safely under `#app`'s own ~536px content cap), and the 6 seats
+rearranged into two rows of three (top: slots 3/4/5, bottom: slots
+2/1/6, human at bottom-center) rather than a hexagon — this is also
+just a more standard 6-max layout. Seat box widened to `9rem` (from
+8.5rem) so seat text wraps to fewer lines, and card-back/revealed-card
+images inside a seat box are shrunk further
+(`[data-seats] .card-img { width: 1.8rem }`) — both specifically to
+keep each seat box's real height down, since three-per-row means every
+pair within a row only needs *horizontal* clearance (large, since
+they're spread across the width), while only same-column pairs
+(top-left/bottom-left, top-right/bottom-right) need *vertical*
+clearance — much more forgiving than the old every-adjacent-row-needs-
+vertical-gap approach.
+
+Also fixed a real bug in the first version: `[data-seats]` used
+`inset: 0`, but I'd added `.table-oval`'s own padding assuming it would
+keep seats away from the felt's outer edge — it doesn't, because an
+absolutely positioned child ignores its parent's padding entirely. The
+percentages themselves now carry the full responsibility for staying
+inside the felt (verified in tests, see Test Notes), not padding that
+was silently doing nothing.
+
+**How this was actually verified this time**, closing the gap the first
+version left open: no Claude-in-Chrome extension is connected to this
+account (confirmed again, `list_connected_browsers` empty), but
+`google-chrome` is installed on this machine and runs headless
+independent of that extension. Built two standalone HTML files
+reproducing `renderTableOval`'s and `renderHand`'s/`renderTable`'s
+*actual* output (real seat markup, real marker badges, real chip icons,
+real card artwork from `card-svgs/`) against the *actual*
+`src/style.css`, and screenshotted them with
+`google-chrome --headless --screenshot` at both desktop (1280px) and
+phone (375px) width. This is real rendered output, not a computed
+approximation — screenshots kept in this session's scratchpad. The
+oval is visibly wide and landscape now, matching the reference; all 6
+seats are clearly non-overlapping and readable at both widths.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
@@ -219,3 +265,14 @@ bounce-back needed.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+
+2026-09-20 — User (before a formal accept decision was recorded): "why is
+the circle of the table horizontally squished? the sizing and positioning
+are not good," with a reference screenshot of a typical wide/landscape
+6-max poker table UI. **Decision: changes requested.** Root cause: the
+oval's `aspect-ratio` was `4/5` (taller than wide) — chosen specifically
+to dodge a vertical-overlap risk in the original seat math, which
+produced a portrait-squished shape instead of a real poker table's
+landscape proportions. Fixed (see updated Implementation Notes below)
+and re-verified visually via real screenshots this time, not just
+computed geometry — see updated Validation Notes.
