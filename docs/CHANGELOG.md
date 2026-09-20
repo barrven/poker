@@ -7,6 +7,15 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Card images for hole and community cards (features/015-card-images.md)
+
+Hole cards and the board now show real card artwork instead of text
+notation ("As", "Kh"). Your own hole cards and the community cards
+(flop/turn/river) render as images as they're dealt. Opponents' hole
+cards show a card-back image while hidden, and swap to their real cards
+at showdown — never before. Sized to stay legible and undistorted on
+both desktop and phone.
+
 ## 2026-09-20 — Phone-usable layout (features/013-responsive-layout.md)
 
 Register, log in, the table, and hand history all work on a phone

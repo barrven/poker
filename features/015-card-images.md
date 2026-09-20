@@ -1,7 +1,7 @@
 ---
 id: 015
 title: Card images for hole and community cards
-status: accept
+status: done
 priority: high
 iteration: 5
 ---
@@ -184,3 +184,9 @@ for `/accept` to bless). No bounce-back needed.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+
+2026-09-20 — User: "accept it and continue" (given directly, ahead of the
+stage's own gate prompt). Decision: **accepted, continue the slice.**
+Other current-slice backlog features (016, 017, 018) remain; active
+feature moves to 016-table-layout (highest priority remaining), phase
+back to `implement`.
