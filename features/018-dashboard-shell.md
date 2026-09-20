@@ -1,7 +1,7 @@
 ---
 id: 018
 title: Responsive app-shell dashboard
-status: validating
+status: accept
 priority: medium
 iteration: 5
 ---
@@ -26,20 +26,20 @@ Notes.
 ## Acceptance Criteria
 _Testable, checkable statements. `/validate` and `/accept` check against these directly._
 
-- [ ] Once logged in, a top menu bar is visible with logout, profile,
+- [x] Once logged in, a top menu bar is visible with logout, profile,
       and settings entries.
-- [ ] Logout from the top menu bar ends the session (existing logout
+- [x] Logout from the top menu bar ends the session (existing logout
       behavior, just relocated/restyled).
-- [ ] The default logged-in view (before sitting at a table) shows the
+- [x] The default logged-in view (before sitting at a table) shows the
       player's hand history.
-- [ ] A visible "sit down" action is available from the dashboard.
-- [ ] A visible "add chips" action is available from the dashboard,
+- [x] A visible "sit down" action is available from the dashboard.
+- [x] A visible "add chips" action is available from the dashboard,
       wired to the existing top-up flow, usable without first busting
       at a table.
-- [ ] The app-shell layout is responsive: no horizontal scrolling and
+- [x] The app-shell layout is responsive: no horizontal scrolling and
       comfortably tappable controls at phone width, consistent with
       requirement 19.
-- [ ] Existing dashboard functionality (current tab balance, hand
+- [x] Existing dashboard functionality (current tab balance, hand
       history contents and correctness) is unchanged by the redesign.
 
 ## Implementation Notes
@@ -148,6 +148,62 @@ elsewhere either.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+
+**Tooling:** `typecheck` clean (all 4 tsconfigs), `lint` clean (biome,
+39 files), `build` clean (`vite build` + server `tsc`). Full test
+suite: 164/164, run 5 consecutive times with no flakes.
+
+**Live end-to-end walkthrough (curl against the real API):** register
+(lands on the dashboard) → `/api/history` returns `{ hands: [] }`
+(shown outright, no toggle needed) → add chips (1000 → 2000) → sit
+down (2000 → 1800 tab, seated) → leave (back to 2000 tab, not seated —
+back on the dashboard) → logout from the top menu → `/api/me` now 401.
+Every dashboard action and the full session lifecycle work correctly
+in sequence.
+
+**Real rendered screenshots** (built during `/implement`, referenced
+here): the dashboard alone at desktop (1000px), phone (375px), and a
+narrower phone (320px) width, plus the seated/table view with the
+topbar composed on top of feature 016's oval, at desktop width. All
+render cleanly — topbar and dashboard actions fit without any
+horizontal scroll at any tested width, the disabled Settings button is
+visibly distinct from the active Logout button, and the topbar sits
+correctly above the oval table with no layout conflict between the two
+features.
+
+Per-criterion:
+1. **Pass.** `renderTopMenu` renders `data-profile` (username),
+   `id="settings"`, and `id="logout"` inside `data-topbar`, called
+   unconditionally for every signed-in state — confirmed in source and
+   in all four screenshots (dashboard, both phone widths, seated view).
+2. **Pass.** The relocated `#logout` button calls the exact same
+   pre-existing `onLogout` (still `POST /api/logout`) — confirmed live
+   (logout → 401 on next `/api/me`).
+3. **Pass.** `renderDashboard` calls `renderHistory` directly, not
+   `renderHistoryToggle`; `loadDashboardHistory` fetches automatically
+   the moment the dashboard needs it. Confirmed live (`/api/history`
+   populated and ready) and visually (history section present in the
+   dashboard screenshot with no click needed).
+4. **Pass.** `renderSitControl` renders inside the dashboard;
+   confirmed live (`/api/sit` succeeds from the dashboard state) and
+   visually.
+5. **Pass.** The dashboard's `#topup` button reuses the exact existing
+   `/api/tab/topup` endpoint/`onTopUp` handler; confirmed live that a
+   fresh, never-seated account can top up successfully (1000 → 2000
+   before ever sitting).
+6. **Pass, visually confirmed.** `[data-topbar]`/`[data-topnav]` both
+   use `flex-wrap: wrap`; screenshots at 375px and 320px both show
+   clean layout with no clipping or overflow, and all buttons keep the
+   project's existing 44px `min-height` touch-target rule.
+7. **Pass.** `data-tab` and `renderHistory`'s markup are byte-for-byte
+   unchanged; every pre-existing hand-history/tab/rebuy test still
+   passes without modification — the strongest possible signal that
+   correctness wasn't disturbed by the redesign.
+
+**Outcome: all 7 acceptance criteria pass**, verified with live API
+calls and real rendered screenshots. No bounce-back needed. This is
+also the last feature in the current slice (015-018) — nothing else
+remains at `backlog` for iteration 5.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
