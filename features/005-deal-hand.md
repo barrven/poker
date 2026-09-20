@@ -1,7 +1,7 @@
 ---
 id: 005
 title: Deal a Hold'em hand
-status: testing
+status: validating
 priority: high
 iteration: 2
 ---

@@ -4,11 +4,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
 import type { AddressInfo } from "node:net";
 import type { DatabaseSync } from "node:sqlite";
 import { createApp } from "../server/app.js";
 import { openDb } from "../server/db.js";
 
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tmpDirs: string[] = [];
 
 after(() => {
@@ -253,4 +255,43 @@ test("before a hand starts, GET /api/hand reports no hand in progress", async ()
   } finally {
     await app.close();
   }
+});
+
+test("the app offers a real Deal hand control once seated, calling POST /api/hand/start", () => {
+  const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
+  const dealBlock = main.match(
+    /function renderDealControl[\s\S]*?(?=\nfunction renderHand)/,
+  )?.[0];
+  assert.ok(dealBlock, "renderDealControl function not found");
+  assert.match(dealBlock, /id="deal"/);
+  assert.match(dealBlock, /data-deal/);
+  assert.match(dealBlock, />Deal hand</);
+  assert.match(main, /#deal.*addEventListener|addEventListener[\s\S]*?#deal/);
+  assert.match(main, /\/api\/hand\/start/);
+});
+
+test("a dealt hand's view shows street, board, the human's own hole cards, and per-seat stacks with dealer/blind markers", () => {
+  const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
+  const handBlock = main.match(
+    /function renderHand[\s\S]*?(?=\nfunction escapeHtml)/,
+  )?.[0];
+  assert.ok(handBlock, "renderHand function not found");
+  assert.match(handBlock, /data-street/);
+  assert.match(handBlock, /data-board/);
+  assert.match(handBlock, /data-hole-cards/);
+  assert.match(handBlock, /hand\.holeCards/);
+  assert.match(handBlock, /data-seats/);
+  assert.match(handBlock, /hand\.button/);
+  assert.match(handBlock, /hand\.smallBlindSeat/);
+  assert.match(handBlock, /hand\.bigBlindSeat/);
+  assert.match(handBlock, /id="leave"/);
+});
+
+test("the guest (logged-out) markup never offers a deal control", () => {
+  const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
+  const guestMarkup = main.match(
+    /<form id="register-form">[\s\S]*?\n {2}`;/,
+  )?.[0];
+  assert.ok(guestMarkup, "guest markup not found");
+  assert.doesNotMatch(guestMarkup, /data-deal|id="deal"/);
 });
