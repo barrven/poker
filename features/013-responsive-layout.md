@@ -1,7 +1,7 @@
 ---
 id: 013
 title: Phone-usable layout
-status: testing
+status: validating
 priority: low
 iteration: 4
 ---
@@ -86,7 +86,46 @@ warrants. See Test Notes for how this gap is covered going forward.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+New file `tests/responsive-layout.test.ts` (5 tests):
+
+- The viewport meta tag exists with the correct `width=device-width,
+  initial-scale=1.0` content.
+- The universal `box-sizing: border-box` reset is present.
+- Both the `button` and `input` rules declare `min-height: 44px`.
+- The `@media (max-width: 480px)` phone-padding rule exists.
+- No CSS rule anywhere declares a plain `width` (not `max-width` /
+  `min-width`) of 375px or more — a regression guard against
+  reintroducing a fixed width that would force horizontal scroll on a
+  375px-wide phone. (Regex deliberately excludes `max-width`/
+  `min-width` via a negative lookbehind, since those are exactly the
+  responsive tools this feature *should* use.)
+
+These are source-inspection tests, the same style already used
+throughout this repo for frontend behavior (`tests/deal.test.ts`,
+`tests/next-hand.test.ts`, `tests/action-log.test.ts`, etc.) — this
+project has no committed browser-automation dependency, so no
+automated test can render the page and measure real layout/overflow.
+
+Deliberately not covered by the committed suite (covered instead by a
+manual headless-Chrome walkthrough during `/implement` and `/validate`,
+documented in Implementation Notes / Validation Notes):
+- Actual absence of horizontal scroll at a real 375px viewport across
+  every app state (guest, signed-in, seated, mid-hand, history open).
+- Actual rendered tap-target sizes (`getBoundingClientRect()`) for
+  every button/input.
+- Actual desktop-layout screenshot confirming AC4.
+
+This is a real, acknowledged coverage gap for *future* CSS changes
+(nothing stops someone from later shrinking `min-height` back down
+without a test failing) — narrower than what a Puppeteer/Playwright
+suite would give, but proportionate to a project with no such
+dependency today per `docs/SPEC.md`'s stated stack. The regression
+guard above (no CSS rule with a fixed width >= 375px) is the practical
+middle ground: it can't catch every way phone-usability could
+regress, but it catches the single most common way ("someone adds a
+fixed-width rule").
+
+Full suite: 130/130, run 4 times in a row.
 
 ## Validation Notes
 
