@@ -1,7 +1,7 @@
 ---
 id: 017
 title: Standard login/register flow
-status: accept
+status: done
 priority: medium
 iteration: 5
 ---
@@ -171,3 +171,7 @@ bounce-back needed.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+
+2026-09-20 — Asked via AskUserQuestion after validation passed: **"Accept
+and continue."** Slice continues with 018-dashboard-shell, the last
+current-slice backlog item.

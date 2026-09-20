@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 5
-- **Phase:** accept
-- **Active feature:** 017-login-register-flow
+- **Phase:** implement
+- **Active feature:** 018-dashboard-shell
 - **Last updated:** 2026-09-20
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — accepted 017-login-register-flow (accept and continue); active 018-dashboard-shell (last item in current slice); phase set to `implement`
 - 2026-09-20 — validated 017-login-register-flow (pass: typecheck/lint/build clean, 153/153 tests x5 runs, live curl walkthrough of register/logout/login cycle, real headless-Chrome screenshots of both views; all 5 acceptance criteria checked); phase set to `accept`
 - 2026-09-20 — tested 017-login-register-flow (6 new tests in tests/login-register-flow.test.ts, 153/153 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 017-login-register-flow (guest view gained authView login/register sub-state, toggle links, failures keep the user on the same form; verified visually via headless-Chrome mockups and live curl against the real API); phase set to `test`

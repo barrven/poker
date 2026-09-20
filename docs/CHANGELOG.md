@@ -7,6 +7,14 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Standard login/register flow (features/017-login-register-flow.md)
+
+Logged-out visitors now see a login form by default, not login and
+register stacked together on one page. A visible link switches to a
+separate registration view, and back again. A successful registration
+signs you straight in, same as before. No change to how passwords are
+hashed, how errors are shown, or how sessions work.
+
 ## 2026-09-20 — Poker table layout (oval seating) (features/016-table-layout.md)
 
 The table now looks like an actual poker table: at desktop width, the
