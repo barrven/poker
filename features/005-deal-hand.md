@@ -1,7 +1,7 @@
 ---
 id: 005
 title: Deal a Hold'em hand
-status: validating
+status: accept
 priority: high
 iteration: 2
 ---
@@ -221,6 +221,32 @@ against a scratch SQLite file, with users `val005alice` / `val005bob`.
 No new deviations beyond the ones already recorded in Implementation
 Notes (fixed human seat 0, fixed first-hand button 0, no street-advance
 API yet, no frontend card UI yet) — all deliberate and documented there.
+
+2026-09-19 — **Re-validation after `/accept` change request.** Pass.
+Ready for `/accept` again.
+
+Project checks (re-run): lint pass, typecheck pass, build pass, tests
+pass (`npm test` — 47/47: 8 hand + 9 deal + 4 lint + 8 table + 7 auth +
+5 tab + 6 scaffold).
+
+- Confirmed the production bundle actually contains the fix, not just
+  dev source: `grep -o "Deal hand" dist/client/assets/*.js` and
+  `grep -o "/api/hand/start" dist/client/assets/*.js` both matched.
+- Live re-walkthrough on a fresh isolated instance (`:3011`, scratch
+  SQLite): register → sit → `GET /api/me` (`tab: 800, seated: true,
+  stack: 200`, hand not started yet) → `POST /api/hand/start` (the same
+  endpoint `#deal`'s click handler calls) → dealt hand with blinds
+  deducted as before → `GET /api/hand` immediately after returns the
+  identical view, confirming the reload-restores-hand behavior the
+  frontend's initial-load/login logic relies on.
+- Could not drive the browser directly (Claude-in-Chrome extension not
+  connected in this session), so AC5's "available to the human client"
+  is validated at the API/bundle level above plus the 3 new source-text
+  UI tests in `tests/deal.test.ts`, not a literal on-screen click. The
+  user's own screenshot from before the fix (showing the seated table
+  with no deal control) is the baseline this fix responds to; asking
+  them to confirm the fix visually themselves is appropriate for the
+  `/accept` gate, not a `/validate` blocker.
 
 ## Acceptance Log
 
