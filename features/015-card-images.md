@@ -1,7 +1,7 @@
 ---
 id: 015
 title: Card images for hole and community cards
-status: testing
+status: validating
 priority: high
 iteration: 5
 ---
@@ -67,6 +67,46 @@ that reading's wrong.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
+
+New file `tests/card-images.test.ts` (9 tests, no jsdom in this project —
+same source-regex + live-API convention as the rest of `tests/`):
+
+- Every card `createDeck()` can produce, plus both `1B.svg`/`2B.svg`
+  card-backs, has a real file in `card-svgs/` (asset-completeness check
+  against the actual server alphabet, not a hardcoded list).
+- `vite.config.ts` sets `publicDir: "card-svgs"`.
+- `cardImageSrc`/`cardImg`/`cardBackImg`/`renderCards`/`renderHiddenCards`
+  exist and wire together as expected (uppercased suit, `<img>` markup,
+  `1B.svg` for backs).
+- `renderHand` uses `renderCards` for both `data-hole-cards` and
+  `data-board`, with a regression guard that the old
+  `holeCards.join(" ")` / `board.join(" ")` text form is gone.
+- Per-seat markup: human seat gets no card slot of its own, a computer
+  seat defaults to `renderHiddenCards(2)`, and swaps to
+  `renderCards(revealedEntry.cards)` only for a seat found in
+  `hand.result.revealed` by seat index.
+- `renderSettlement`'s revealed list uses `renderCards`, guarded against
+  the old `r.cards.join(" ")` text form.
+- `.card-img` has both an `aspect-ratio` and a width, with an override
+  under the existing 480px phone breakpoint (AC5 — no distortion at
+  either viewport size).
+- Live end-to-end: starts a real hand over HTTP, asserts the returned
+  `holeCards` match the `rank+suit` shape and each has a matching
+  `card-svgs/` file. A second live test drives hands (capped at 20
+  attempts, same outcome-agnostic style as `tests/showdown.test.ts`'s
+  `playToSettlement`) until a real showdown reveal occurs, then checks
+  every revealed card the same way — ties the client's rendering
+  assumption to real server-dealt data, not just a mocked shape.
+
+Ran 4 consecutive full-suite passes (139/139 each) to rule out flakiness
+from the showdown-reveal test's real randomness.
+
+Deliberately not covered: no actual pixel-level/visual rendering check
+(no jsdom/browser test harness in this project — verified manually
+instead, see Implementation Notes and this feature's live-server SVG
+resolution check during `/implement`). Hand history's plain-text card
+codes are untouched per the Implementation Notes assumption, so no test
+added there.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
