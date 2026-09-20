@@ -130,7 +130,7 @@ test("after dealing, the human is on the clock with call/raise/fold offered, fac
   }
 });
 
-test("a legal call moves chips into the pot, and the placeholder computer opponents auto-complete the round", async () => {
+test("a legal call moves chips into the pot; the placeholder computers auto-complete preflop and check through to the flop, where the human (the button) is on the clock again", async () => {
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
@@ -142,20 +142,28 @@ test("a legal call moves chips into the pot, and the placeholder computer oppone
     });
     assert.equal(acted.status, 200);
     const view = acted.body as {
+      street: string;
+      board: string[];
       pot: number;
+      currentBet: number;
       roundComplete: boolean;
       actingSeat: number | null;
       seats: { index: number; stack: number; streetContribution: number }[];
     };
-    // Everyone ends up having put in exactly the big blind (2) this street:
-    // human called 2, SB (1) called the extra 1, BB's 2 already covers it,
-    // and the three computers left of the button already auto-called 2
-    // each before the human's turn even arrived.
-    assert.equal(view.roundComplete, true);
-    assert.equal(view.actingSeat, null);
+    // Preflop: human called 2, SB (1) called the extra 1, BB's 2 already
+    // covered it, and the computers left of the button already auto-called
+    // 2 each before the human's turn arrived — pot 12, everyone at 198.
+    // Nobody ever bets on the flop (the placeholder only checks/calls), so
+    // action runs all the way around back to the human — the button acts
+    // last post-flop — without the round completing first.
+    assert.equal(view.street, "flop");
+    assert.equal(view.board.length, 3);
+    assert.equal(view.currentBet, 0);
+    assert.equal(view.roundComplete, false);
+    assert.equal(view.actingSeat, 0);
     assert.equal(view.pot, 12);
     for (const seat of view.seats) {
-      assert.equal(seat.streetContribution, 2);
+      assert.equal(seat.streetContribution, 0);
       assert.equal(seat.stack, 198);
     }
   } finally {
@@ -163,7 +171,7 @@ test("a legal call moves chips into the pot, and the placeholder computer oppone
   }
 });
 
-test("folding removes the human from the hand without changing their contributed chips", async () => {
+test("folding removes the human from the hand without changing their contributed chips, and the remaining computers play the hand out to a showdown on their own", async () => {
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
@@ -175,16 +183,25 @@ test("folding removes the human from the hand without changing their contributed
     });
     assert.equal(acted.status, 200);
     const view = acted.body as {
+      street: string;
       seats: { index: number; folded: boolean; stack: number }[];
+      result: { reason: string; winners: { seat: number; delta: number }[] } | null;
     };
     assert.equal(view.seats[0].folded, true);
     assert.equal(view.seats[0].stack, 200);
+    // With the human out, none of the five placeholder computers ever
+    // bets/raises/folds, so the hand runs itself all the way to a river
+    // showdown among them without any further human input.
+    assert.equal(view.street, "river");
+    assert.ok(view.result);
+    assert.equal(view.result?.reason, "showdown");
+    assert.ok((view.result?.winners.length ?? 0) > 0);
   } finally {
     await app.close();
   }
 });
 
-test("a raise reopens the action for computer seats that had already called", async () => {
+test("a raise reopens the action for computer seats that had already called, then the human is on the clock again once the flop's free round of checks reaches them", async () => {
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
@@ -196,18 +213,26 @@ test("a raise reopens the action for computer seats that had already called", as
     });
     assert.equal(acted.status, 200);
     const view = acted.body as {
+      street: string;
       pot: number;
       currentBet: number;
       roundComplete: boolean;
+      actingSeat: number | null;
       seats: { streetContribution: number; stack: number }[];
     };
-    assert.equal(view.currentBet, 6);
-    // Every computer seat calls the new 6 (placeholder strategy never
-    // folds or re-raises), so the round completes with everyone at 6.
-    assert.equal(view.roundComplete, true);
+    // Every computer seat calls the new 6 (the placeholder never folds or
+    // re-raises), so preflop completes with everyone at 6 — pot 36. Nobody
+    // bets on the flop either, so the round of checks runs all the way
+    // around back to the human (the button, who acts last post-flop)
+    // before the flop's round can complete — every seat that's still in
+    // must act at least once per street, the human included.
     assert.equal(view.pot, 36);
+    assert.equal(view.street, "flop");
+    assert.equal(view.currentBet, 0);
+    assert.equal(view.roundComplete, false);
+    assert.equal(view.actingSeat, 0);
     for (const seat of view.seats) {
-      assert.equal(seat.streetContribution, 6);
+      assert.equal(seat.streetContribution, 0);
       assert.equal(seat.stack, 194);
     }
   } finally {

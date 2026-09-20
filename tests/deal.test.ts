@@ -148,6 +148,7 @@ test("a seated player can start a hand: dealer button visible, blinds posted fro
       "legalActions",
       "minRaiseSize",
       "pot",
+      "result",
       "roundComplete",
       "seats",
       "smallBlindSeat",
