@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 5
-- **Phase:** accept
-- **Active feature:** 018-dashboard-shell
+- **Phase:** retro
+- **Active feature:** _none — slice complete_
 - **Last updated:** 2026-09-20
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — accepted 018-dashboard-shell (slice complete → retro); active feature cleared; phase set to `retro`
 - 2026-09-20 — validated 018-dashboard-shell (pass: typecheck/lint/build clean, 164/164 tests x5 runs, live curl walkthrough of the full register/topup/sit/leave/logout cycle, real headless-Chrome screenshots at desktop+phone+narrow widths; all 7 acceptance criteria checked); phase set to `accept`. Last item in current slice — nothing else at `backlog` for iteration 5.
 - 2026-09-20 — tested 018-dashboard-shell (11 new tests in tests/dashboard-shell.test.ts, 164/164 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 018-dashboard-shell (top menu bar with profile/settings-placeholder/logout, dashboard default view with sit/add-chips/hand-history, verified visually with headless-Chrome mockups + live curl checks); phase set to `test`

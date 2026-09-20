@@ -1,7 +1,7 @@
 ---
 id: 018
 title: Responsive app-shell dashboard
-status: accept
+status: done
 priority: medium
 iteration: 5
 ---
@@ -207,3 +207,8 @@ remains at `backlog` for iteration 5.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+
+2026-09-20 — Asked via AskUserQuestion after validation passed, framed as
+the last item in the slice: **"Accept (slice complete → retro)."** This
+closes out iteration 5 (015-018); next is `/retro`, not another
+`/implement`.

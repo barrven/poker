@@ -7,6 +7,17 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Responsive app-shell dashboard (features/018-dashboard-shell.md)
+
+Once logged in, you now land on a proper dashboard instead of an ad hoc
+page: a top menu bar (your username, a Settings placeholder, and Log
+out) is visible everywhere, and before you sit at a table the default
+view shows your hand history right away — no click needed — alongside
+a "Sit down" button and a new "Add chips" button that tops up your tab
+without first having to bust at a table. This closes out iteration 5:
+the full UI-overhaul slice (card images, oval table layout, login/
+register split, and this dashboard shell) is now built.
+
 ## 2026-09-20 — Standard login/register flow (features/017-login-register-flow.md)
 
 Logged-out visitors now see a login form by default, not login and
