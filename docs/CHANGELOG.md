@@ -7,6 +7,17 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-19 — Showdown, pots, and hand ranking (features/007-showdown-pots.md)
+
+A hand now plays all the way through: dealing, betting on every street,
+and settling. If everyone folds, the last player wins the pot without
+showing their cards. Otherwise a real showdown compares standard poker
+hand rankings (high card through royal flush), ties split evenly, and
+side pots are built correctly when players are all-in for different
+amounts. Your running tab in SQLite updates immediately when a hand
+settles, reflecting what you won or lost — not just when you leave the
+table. The app shows the result and lets you deal the next hand.
+
 ## 2026-09-19 — Betting rounds and legal actions (features/006-betting.md)
 
 On your turn you can fold, check, call, bet, raise, or go all-in — only

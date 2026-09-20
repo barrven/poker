@@ -1,7 +1,7 @@
 ---
 id: 007
 title: Showdown, pots, and hand ranking
-status: accept
+status: done
 priority: high
 iteration: 2
 ---
@@ -270,4 +270,8 @@ by ascending seat index rather than button-relative order).
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-19 — Accepted. User selected "Accept and continue" in response
+to the acceptance summary (all 6 acceptance criteria pass, project
+checks pass, full hand lifecycle playable end-to-end, the fold-out path
+noted as code-complete but not live-reachable until 009). Moving on to
+009-ai-opponents, the last feature in this slice.
