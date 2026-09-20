@@ -1,7 +1,7 @@
 ---
 id: 005
 title: Deal a Hold'em hand
-status: testing
+status: validating
 priority: high
 iteration: 2
 ---
@@ -95,7 +95,53 @@ Files: `server/poker/deck.ts` (new), `server/poker/hand.ts` (new),
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+`tests/hand.test.ts` (new, 8 tests — pure engine, no server) and
+`tests/deal.test.ts` (new, 6 tests — API integration) via `npm test`
+(44/44 total: 8 hand + 6 deal + 4 lint + 8 table + 7 auth + 5 tab + 6
+scaffold).
+
+`tests/hand.test.ts` covered directly against `server/poker/deck.ts` and
+`server/poker/hand.ts` (a deterministic non-constant injected `rng`, no
+`Math.random`, so results are reproducible): `createDeck()` is exactly
+the 52 standard cards, no duplicates; `shuffle()` reorders without
+changing the multiset and doesn't mutate its input; a full hand dealt
+through the river (`dealHand` → `dealFlop` → `dealTurn` → `dealRiver`)
+has 17 total dealt cards (12 hole + 5 board), all unique, all from the
+standard deck; all six seats get exactly two hole cards; the dealer
+button and small/big blind seats are correct for **every** button
+position 0-5 (not just the default); an invalid button seat (`-1`, `6`,
+`1.5`) throws; streets come in order (flop=3 cards, turn=+1, river=+1,
+each street's board is a prefix of the next); `dealTurn`/`dealRiver`
+throw when called out of sequence (river before turn, turn before flop,
+flop dealt twice).
+
+`tests/deal.test.ts` covered via the real HTTP API (register → sit →
+`/api/hand/start`): the response shape has exactly `{button,
+smallBlindSeat, bigBlindSeat, street, board, holeCards, seats}` — no key
+anywhere carries another seat's hole cards, and `holeCards` is exactly
+the human's 2 cards; for a first-hand default (button=seat 0=human), SB
+is seat 1 and BB is seat 2 and their stacks reflect the deduction (199,
+198) while the human's stack (200, not SB/BB) and the other three
+computer seats (200 each) are untouched; `GET /api/hand` returns the
+identical view after starting; starting twice → 409 without dealing a
+second hand; not seated → 400 for both start and view; logged out → 401
+for both; seated but no hand started yet → `GET /api/hand` 400 "no hand
+in progress".
+
+Deliberately not: `POST /api/hand/advance`-style street progression via
+the API (doesn't exist yet — AC4 explicitly permits a test harness for
+that, which `tests/hand.test.ts` already exercises directly against the
+engine; live advancement is wired in feature 006 when betting completes
+a round); frontend rendering of hole cards/board (feature 008's scope,
+per Implementation Notes); button rotation across multiple hands
+(feature 010, deferred — only the fixed first-hand default is tested
+here).
+
+Found during this stage: `tests/deal.test.ts` initially imported
+`fileURLToPath` unused (copy-paste from `tests/table.test.ts`'s header,
+where it's needed for reading `src/main.ts`; this file never reads a
+source file). `npm run lint` (now enforced, feature 014) caught it;
+removed the unused import rather than suppressing the rule.
 
 ## Validation Notes
 
