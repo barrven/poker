@@ -105,6 +105,48 @@ async function sitAndDeal(
   return started.body as Record<string, unknown>;
 }
 
+type ActionBody = {
+  street: string;
+  pot: number;
+  currentBet: number;
+  toCall: number;
+  minRaiseSize: number;
+  roundComplete: boolean;
+  actingSeat: number | null;
+  legalActions: string[];
+  result: unknown;
+  seats: { index: number; stack: number; streetContribution: number; folded: boolean; allIn: boolean }[];
+};
+
+// Keeps responding for the human with the simplest always-legal action
+// (check when free, otherwise call — never raising, so the human itself
+// never reopens action) until either the hand settles or it's genuinely
+// not the human's turn to decide anymore. Real computer opponents (this
+// feature) can fold, call, or raise depending on their actual cards, so
+// a hand's exact path (does the round complete after one call, or does a
+// computer re-raise and reopen it?) is no longer scripted/deterministic —
+// tests assert invariants that hold regardless of that path.
+async function respondSafely(
+  base: string,
+  cookie: string,
+  body: ActionBody,
+  maxSteps = 100,
+): Promise<ActionBody> {
+  let current = body;
+  for (let i = 0; i < maxSteps && !current.result; i++) {
+    assert.equal(current.actingSeat, 0, "expected the human to be on the clock");
+    const action = current.legalActions.includes("check") ? "check" : "call";
+    const next = await json(base, "/api/hand/action", {
+      method: "POST",
+      body: JSON.stringify({ action }),
+      headers: { cookie },
+    });
+    assert.equal(next.status, 200);
+    current = next.body as ActionBody;
+  }
+  return current;
+}
+
 function errorMessage(body: unknown): string {
   if (typeof body !== "object" || body === null || !("error" in body)) {
     assert.fail(`expected error object, got ${JSON.stringify(body)}`);
@@ -114,57 +156,56 @@ function errorMessage(body: unknown): string {
   return message as string;
 }
 
-test("after dealing, the human is on the clock with call/raise/fold offered, facing the big blind", async () => {
+test("after dealing, the human is on the clock facing a real bet (at least the big blind), with fold/call always offered", async () => {
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
     const hand = await sitAndDeal(app.base, alice.cookie);
     assert.equal(hand.actingSeat, 0);
-    assert.equal(hand.toCall, 2);
-    assert.deepEqual(
-      new Set(hand.legalActions as string[]),
-      new Set(["fold", "call", "raise", "all-in"]),
-    );
+    // toCall is always exactly currentBet here (the human hasn't put any
+    // chips in yet this street) and at least the big blind (2) — a
+    // computer with a strong hand may have already raised preflop before
+    // the human's turn, so it isn't pinned to exactly 2 anymore.
+    assert.equal(hand.toCall, hand.currentBet);
+    assert.ok((hand.currentBet as number) >= 2);
+    const legal = new Set(hand.legalActions as string[]);
+    assert.ok(legal.has("fold"));
+    assert.ok(legal.has("call"));
+    assert.ok(legal.has("all-in"));
+    assert.ok(!legal.has("check"));
+    assert.ok(!legal.has("bet"));
   } finally {
     await app.close();
   }
 });
 
-test("a legal call moves chips into the pot; the placeholder computers auto-complete preflop and check through to the flop, where the human (the button) is on the clock again", async () => {
+test("a legal call moves chips into the pot without ever decreasing it, and the hand keeps making forward progress (next street or settlement)", async () => {
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
-    await sitAndDeal(app.base, alice.cookie);
+    const dealt = await sitAndDeal(app.base, alice.cookie);
+    const potBeforeCall = dealt.pot as number;
     const acted = await json(app.base, "/api/hand/action", {
       method: "POST",
       body: JSON.stringify({ action: "call" }),
       headers: { cookie: alice.cookie },
     });
     assert.equal(acted.status, 200);
-    const view = acted.body as {
-      street: string;
-      board: string[];
-      pot: number;
-      currentBet: number;
-      roundComplete: boolean;
-      actingSeat: number | null;
-      seats: { index: number; stack: number; streetContribution: number }[];
-    };
-    // Preflop: human called 2, SB (1) called the extra 1, BB's 2 already
-    // covered it, and the computers left of the button already auto-called
-    // 2 each before the human's turn arrived — pot 12, everyone at 198.
-    // Nobody ever bets on the flop (the placeholder only checks/calls), so
-    // action runs all the way around back to the human — the button acts
-    // last post-flop — without the round completing first.
-    assert.equal(view.street, "flop");
-    assert.equal(view.board.length, 3);
-    assert.equal(view.currentBet, 0);
-    assert.equal(view.roundComplete, false);
-    assert.equal(view.actingSeat, 0);
-    assert.equal(view.pot, 12);
-    for (const seat of view.seats) {
-      assert.equal(seat.streetContribution, 0);
-      assert.equal(seat.stack, 198);
+    const afterCall = acted.body as ActionBody;
+    assert.ok(afterCall.pot >= potBeforeCall);
+    // Computer opponents (this feature) may re-raise, requiring more
+    // human decisions before the round actually completes — respond
+    // safely (call/check only) until it does, then check we made real
+    // forward progress: either a later street was reached, or the hand
+    // settled outright (e.g. everyone else folded to a re-raise).
+    const settled = await respondSafely(app.base, alice.cookie, afterCall);
+    assert.ok(settled.street !== "preflop" || settled.result !== null);
+    assert.ok(settled.pot >= afterCall.pot);
+    // Stacks stay non-negative throughout, but a winner's stack can grow
+    // past 200 once the pot is awarded at settlement — only bounded by
+    // the whole table's 1200 chips (200 x 6).
+    for (const seat of settled.seats) {
+      assert.ok(seat.stack >= 0 && seat.stack <= 1200);
     }
   } finally {
     await app.close();
@@ -201,39 +242,37 @@ test("folding removes the human from the hand without changing their contributed
   }
 });
 
-test("a raise reopens the action for computer seats that had already called, then the human is on the clock again once the flop's free round of checks reaches them", async () => {
+test("a legal raise reopens the action for seats that had already called, and the hand keeps making forward progress", async () => {
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
-    await sitAndDeal(app.base, alice.cookie);
+    const dealt = await sitAndDeal(app.base, alice.cookie);
+    assert.ok((dealt.legalActions as string[]).includes("raise"));
+    const raiseTo = (dealt.currentBet as number) + (dealt.minRaiseSize as number);
     const acted = await json(app.base, "/api/hand/action", {
       method: "POST",
-      body: JSON.stringify({ action: "raise", amount: 6 }),
+      body: JSON.stringify({ action: "raise", amount: raiseTo }),
       headers: { cookie: alice.cookie },
     });
     assert.equal(acted.status, 200);
-    const view = acted.body as {
-      street: string;
-      pot: number;
-      currentBet: number;
-      roundComplete: boolean;
-      actingSeat: number | null;
-      seats: { streetContribution: number; stack: number }[];
-    };
-    // Every computer seat calls the new 6 (the placeholder never folds or
-    // re-raises), so preflop completes with everyone at 6 — pot 36. Nobody
-    // bets on the flop either, so the round of checks runs all the way
-    // around back to the human (the button, who acts last post-flop)
-    // before the flop's round can complete — every seat that's still in
-    // must act at least once per street, the human included.
-    assert.equal(view.pot, 36);
-    assert.equal(view.street, "flop");
-    assert.equal(view.currentBet, 0);
-    assert.equal(view.roundComplete, false);
-    assert.equal(view.actingSeat, 0);
-    for (const seat of view.seats) {
-      assert.equal(seat.streetContribution, 0);
-      assert.equal(seat.stack, 194);
+    const afterRaise = acted.body as ActionBody;
+    // If everyone just calls the raise, the whole preflop round can
+    // complete and advance to the flop within this same response — a new
+    // street's currentBet correctly resets to 0, less than raiseTo, which
+    // is fine. Only assert the "at least raiseTo" invariant while still on
+    // the same (preflop) street, where a computer may have re-raised
+    // again before it's the human's turn (or the round completes).
+    if (afterRaise.street === "preflop") {
+      assert.ok(afterRaise.currentBet >= raiseTo);
+    }
+    assert.ok(afterRaise.pot > (dealt.pot as number));
+    // Other computer seats (real strategy, this feature) may respond by
+    // folding, calling, or re-raising again — respond safely until the
+    // hand settles or genuinely moves forward.
+    const settled = await respondSafely(app.base, alice.cookie, afterRaise);
+    assert.ok(settled.street !== "preflop" || settled.result !== null);
+    for (const seat of settled.seats) {
+      assert.ok(seat.stack >= 0 && seat.stack <= 1200);
     }
   } finally {
     await app.close();
@@ -244,7 +283,7 @@ test("an illegal action (check facing a bet) is rejected and changes nothing", a
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
-    await sitAndDeal(app.base, alice.cookie);
+    const dealt = await sitAndDeal(app.base, alice.cookie);
     const rejected = await json(app.base, "/api/hand/action", {
       method: "POST",
       body: JSON.stringify({ action: "check" }),
@@ -253,13 +292,16 @@ test("an illegal action (check facing a bet) is rejected and changes nothing", a
     assert.equal(rejected.status, 400);
     assert.match(errorMessage(rejected.body), /check/i);
 
-    // Confirm nothing changed: still the human's turn, same pot.
+    // Confirm nothing changed: still the human's turn, same pot as before
+    // the rejected attempt (whatever it was — a computer may have raised
+    // preflop before the human's turn, so it isn't pinned to a fixed
+    // number here).
     const stillWaiting = await json(app.base, "/api/hand", {
       headers: { cookie: alice.cookie },
     });
     const view = stillWaiting.body as { actingSeat: number | null; pot: number };
     assert.equal(view.actingSeat, 0);
-    assert.equal(view.pot, 9);
+    assert.equal(view.pot, dealt.pot);
   } finally {
     await app.close();
   }
@@ -269,10 +311,15 @@ test("a raise below the minimum is rejected with no state change", async () => {
   const app = await startApp();
   try {
     const alice = await register(app.base, "alice");
-    await sitAndDeal(app.base, alice.cookie);
+    const dealt = await sitAndDeal(app.base, alice.cookie);
+    // One more than the current bet is always a genuine raise attempt
+    // (exceeds what's owed to call) but, since the minimum raise is
+    // always at least the big blind (2), always short of the minimum —
+    // regardless of what the current bet actually is (a computer may
+    // have already raised preflop before the human's turn).
     const rejected = await json(app.base, "/api/hand/action", {
       method: "POST",
-      body: JSON.stringify({ action: "raise", amount: 3 }),
+      body: JSON.stringify({ action: "raise", amount: (dealt.currentBet as number) + 1 }),
       headers: { cookie: alice.cookie },
     });
     assert.equal(rejected.status, 400);
@@ -336,8 +383,18 @@ test("going all-in with a full stack is offered and moves the entire stack into 
       headers: { cookie: alice.cookie },
     });
     assert.equal(acted.status, 200);
-    const view = acted.body as { seats: { index: number; stack: number; allIn: boolean }[] };
-    assert.equal(view.seats[0].stack, 0);
+    const view = acted.body as {
+      seats: { index: number; stack: number; allIn: boolean }[];
+      result: unknown;
+    };
+    // The all-in itself always empties the human's stack to 0 and marks
+    // them all-in — but if every computer opponent responds by folding to
+    // the shove (real strategy, this feature), the hand settles as a
+    // fold-out win within this same response, and the human's stack then
+    // reflects winning the pot rather than staying at 0.
+    if (!view.result) {
+      assert.equal(view.seats[0].stack, 0);
+    }
     assert.equal(view.seats[0].allIn, true);
   } finally {
     await app.close();

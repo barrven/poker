@@ -183,6 +183,48 @@ test("a round completes immediately when only one player remains after folds", (
   }
 });
 
+test("regression: the big blind's preflop option (toCall 0, currentBet already live from their own blind) offers raise, not bet", () => {
+  // Everyone called the big blind, so seat 2 (BB) owes nothing more
+  // (toCall 0) but a wager already exists on the table (their own posted
+  // blind, currentBet 2) — the aggressive option here is a *raise* on an
+  // existing bet, not a fresh opening *bet*. Offering "bet" here let a
+  // computer strategy construct a "bet" that server/poker/betting.ts's
+  // own applyAction correctly rejects ("A bet is already live"), found by
+  // feature 009's real (non-placeholder) computer strategy stress-testing
+  // this path for the first time.
+  const round = startBettingRound(
+    [200, 200, 200, 200, 200, 200],
+    [
+      { seat: 1, amount: 1 },
+      { seat: 2, amount: 2 },
+    ],
+    3,
+    2,
+    2,
+  );
+  const preflopCalled = mustApply(mustApply(mustApply(round, 3, "call"), 4, "call"), 5, "call");
+  const afterButtonAndBlinds = mustApply(mustApply(preflopCalled, 0, "call"), 1, "call");
+  assert.equal(afterButtonAndBlinds.actingSeat, 2);
+  const bbOptions = legalActions(afterButtonAndBlinds, 2);
+  assert.ok(bbOptions.includes("raise"));
+  assert.ok(!bbOptions.includes("bet"));
+  assert.ok(bbOptions.includes("check"));
+});
+
+test("regression: bet is never offered to a seat too short to afford even the minimum", () => {
+  // A seat with only 1 chip left, facing no bet: it cannot make a legal
+  // (non-all-in) opening bet of the 2-chip minimum. Previously
+  // legalActions offered "bet" unconditionally whenever currentBet was 0,
+  // regardless of whether the seat could actually afford it — a computer
+  // strategy that tried to act on it hit applyAction's "Bet exceeds
+  // remaining stack" rejection.
+  const round = startBettingRound([1, 200, 200, 200, 200, 200], [], 0, 0, 2);
+  const actions = legalActions(round, 0);
+  assert.ok(!actions.includes("bet"));
+  assert.ok(actions.includes("check"));
+  assert.ok(actions.includes("all-in"));
+});
+
 function mustApply(
   state: BettingState,
   seat: number,

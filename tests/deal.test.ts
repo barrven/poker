@@ -158,11 +158,15 @@ test("a seated player can start a hand: dealer button visible, blinds posted fro
 
     // Human is always seat 0 and is the button for a first hand, so blinds
     // come from the two computer seats left of the button (1, 2), and
-    // preflop action starts left of the big blind (seat 3). Feature 006's
-    // placeholder computer strategy (always check/call, see server/table.ts)
-    // auto-acts seats 3, 4, 5 before this response returns, landing back on
-    // the human (seat 0) — the button acts after early position, before the
-    // blinds close the action, same as a real 6-max preflop order.
+    // preflop action starts left of the big blind (seat 3). Feature 009's
+    // real computer strategy (server/poker/ai.ts) auto-acts seats 3, 4, 5
+    // before this response returns, landing back on the human (seat 0) —
+    // the button acts after early position, before the blinds close the
+    // action, same as a real 6-max preflop order. Seats 3-5's exact
+    // stacks are no longer asserted here: unlike feature 006's
+    // always-check/call placeholder, they now fold/call/raise based on
+    // real (random) cards, so only the deterministic facts — the button
+    // and blinds haven't acted yet, the human hasn't either — hold.
     assert.equal(view.button, 0);
     assert.equal(view.smallBlindSeat, 1);
     assert.equal(view.bigBlindSeat, 2);
@@ -173,7 +177,7 @@ test("a seated player can start a hand: dealer button visible, blinds posted fro
     assert.equal(view.seats[1].stack, 199);
     assert.equal(view.seats[2].stack, 198);
     for (const seat of view.seats.slice(3)) {
-      assert.equal(seat.stack, 198);
+      assert.ok(seat.stack >= 0 && seat.stack <= 200);
     }
   } finally {
     await app.close();

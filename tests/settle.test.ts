@@ -103,3 +103,33 @@ test("side pots: a folded seat's contribution still funds pots it cannot win", (
   assert.equal(bySeats.get(2), 70);
   assert.equal(bySeats.get(0) ?? 0, 0);
 });
+
+test("regression: a pot layer with no eligible (non-folded) contributor is refunded, not lost", () => {
+  // Seat 1 commits more than anyone else still in the hand (say, a big
+  // raise everyone else can't fully match), then folds on a later street.
+  // The top layer — funded only by seat 1's excess above what the other
+  // two (both now all-in for less) put in — has zero non-folded
+  // contributors: nobody can win it, since the only seat that reached
+  // that level has folded. It must be refunded to seat 1, not vanish
+  // from the table (found via this feature's chip-conservation stress
+  // testing with real, unscripted computer play across many hands).
+  const contributions: ContributionEntry[] = [
+    { seat: 0, folded: false, totalContribution: 10 },
+    { seat: 1, folded: true, totalContribution: 30 },
+    { seat: 2, folded: false, totalContribution: 10 },
+  ];
+  const board = cards("2c", "5d", "9s", "Jh", "Kd");
+  const holeCards: ShowdownEntry[] = [
+    { seat: 0, holeCards: cards("Ac", "Ad") }, // pair of aces — best hand
+    { seat: 2, holeCards: cards("Qc", "Qh") }, // pair of queens — loses to seat 0
+  ];
+  const results = awardPotsAtShowdown(contributions, board, holeCards);
+  const bySeats = new Map(results.map((r) => [r.seat, r.delta]));
+  const totalAwarded = results.reduce((sum, r) => sum + r.delta, 0);
+  // Main pot (10*3=30) goes to seat 0 (pair of aces beats seat 2's queens).
+  assert.equal(bySeats.get(0), 30);
+  // The uncontested top layer (30-10=20, seat 1's own excess) is refunded
+  // to seat 1, not awarded to anyone else and not dropped.
+  assert.equal(bySeats.get(1), 20);
+  assert.equal(totalAwarded, 50); // 10+30+10 total contributed — nothing lost
+});
