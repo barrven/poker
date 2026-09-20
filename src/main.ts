@@ -477,10 +477,18 @@ function renderHand(hand: HandView, tab: number): string {
       const status = seat.folded ? " — folded" : seat.allIn ? " — all-in" : "";
       const seatKey = seat.kind === "human" ? "you" : `cpu-${seat.index}`;
       const acting = seat.index === hand.actingSeat && !hand.result ? " data-acting" : "";
-      return `<li data-seat="${seatKey}"${acting}>${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips${escapeHtml(status)} (bet ${formatChips(seat.streetContribution)})</li>`;
+      // The human's own hole cards render separately (data-hole-cards,
+      // below); a computer seat shows its hole cards face-down until it's
+      // revealed at showdown (result.revealed), never before.
+      const revealedEntry = hand.result?.revealed?.find((r) => r.seat === seat.index);
+      const seatCards =
+        seat.kind === "human"
+          ? ""
+          : ` ${revealedEntry ? renderCards(revealedEntry.cards) : renderHiddenCards(2)}`;
+      return `<li data-seat="${seatKey}"${acting}>${escapeHtml(label)}${escapeHtml(tag)} — ${formatChips(seat.stack)} chips${escapeHtml(status)} (bet ${formatChips(seat.streetContribution)})${seatCards}</li>`;
     })
     .join("");
-  const boardText = hand.board.length ? hand.board.join(" ") : "—";
+  const boardCards = hand.board.length ? renderCards(hand.board) : "—";
   const isHumanTurn = hand.actingSeat === 0 && hand.legalActions.length > 0;
   const actionArea = hand.result
     ? renderSettlement(hand.result, hand.seats[0].stack, tab)
@@ -497,8 +505,8 @@ function renderHand(hand: HandView, tab: number): string {
       <p data-street>Street: ${escapeHtml(hand.street)}</p>
       <p data-turn>${turnText}</p>
       <p data-pot>Pot: ${formatChips(hand.pot)} chips.</p>
-      <p data-board>Board: ${escapeHtml(boardText)}</p>
-      <p data-hole-cards>Your cards: ${escapeHtml(hand.holeCards.join(" "))}</p>
+      <p data-board>Board: ${boardCards}</p>
+      <p data-hole-cards>Your cards: ${renderCards(hand.holeCards)}</p>
       <ul data-seats>${seatsHtml}</ul>
       ${actionArea}
       ${renderActionLog(hand.actionLog)}
@@ -555,7 +563,7 @@ function renderSettlement(result: SettlementResult, humanStack: number, tab: num
     ? `<ul data-revealed>${result.revealed
         .map(
           (r) =>
-            `<li>${escapeHtml(seatLabel(r.seat))}: ${escapeHtml(r.cards.join(" "))} (${escapeHtml(r.category)})</li>`,
+            `<li>${escapeHtml(seatLabel(r.seat))}: ${renderCards(r.cards)} (${escapeHtml(r.category)})</li>`,
         )
         .join("")}</ul>`
     : "";
@@ -627,6 +635,32 @@ function escapeHtml(value: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+// Card artwork (feature 015): filenames in card-svgs/ are RANK + uppercase
+// SUIT (e.g. "AS.svg", "TH.svg"), matching a card code's rank as-is with
+// its suit uppercased. Vite serves that directory at the site root (see
+// vite.config.ts), so "As" -> "/AS.svg".
+function cardImageSrc(card: string): string {
+  const rank = card[0] ?? "";
+  const suit = (card[1] ?? "").toUpperCase();
+  return `/${rank}${suit}.svg`;
+}
+
+function cardImg(card: string): string {
+  return `<img class="card-img" src="${cardImageSrc(card)}" alt="${escapeHtml(card)}" loading="lazy">`;
+}
+
+function cardBackImg(): string {
+  return `<img class="card-img card-back" src="/1B.svg" alt="Hidden card" loading="lazy">`;
+}
+
+function renderCards(cards: string[]): string {
+  return `<span class="cards">${cards.map(cardImg).join("")}</span>`;
+}
+
+function renderHiddenCards(count: number): string {
+  return `<span class="cards">${Array.from({ length: count }, cardBackImg).join("")}</span>`;
 }
 
 function formFields(form: HTMLFormElement): {

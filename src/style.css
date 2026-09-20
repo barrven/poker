@@ -85,7 +85,9 @@ button {
 }
 
 /* Readable table view (feature 008): structure and legibility, not
-   themed chrome — no felt texture, chip art, or card graphics. */
+   themed chrome. Card artwork (feature 015) is the one graphical
+   exception — the SVGs are fixed-aspect-ratio and sized in rem so they
+   scale down cleanly at phone width without distortion or overlap. */
 
 [data-hand] {
   display: grid;
@@ -103,8 +105,31 @@ button {
 
 [data-hole-cards],
 [data-board] {
-  font-family: "Courier New", monospace;
-  letter-spacing: 0.08em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cards {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  vertical-align: middle;
+}
+
+.card-img {
+  width: 2.6rem;
+  height: auto;
+  aspect-ratio: 5 / 7;
+  border-radius: 0.2rem;
+  box-shadow: 0 0 0 1px rgba(232, 228, 217, 0.25);
+}
+
+@media (max-width: 480px) {
+  .card-img {
+    width: 2.1rem;
+  }
 }
 
 [data-seats] {
@@ -168,8 +193,14 @@ button {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.2rem;
-  font-family: "Courier New", monospace;
+  gap: 0.3rem;
+}
+
+[data-revealed] li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 /* Hand history (feature 012): same structural, unthemed treatment as the
