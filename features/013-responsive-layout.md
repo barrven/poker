@@ -1,7 +1,7 @@
 ---
 id: 013
 title: Phone-usable layout
-status: validating
+status: accept
 priority: low
 iteration: 4
 ---
@@ -14,15 +14,15 @@ are out of scope.
 
 ## Acceptance Criteria
 
-- [ ] At a phone-sized viewport (~375px wide), register, log in, log
+- [x] At a phone-sized viewport (~375px wide), register, log in, log
       out, and the tab amount are usable without horizontal scrolling
       away the primary controls.
-- [ ] At that viewport, hole cards, board, stacks, pot, whose turn,
+- [x] At that viewport, hole cards, board, stacks, pot, whose turn,
       and action controls remain tappable and readable (no control
       clipped off-screen with no way to reach it).
-- [ ] The history view is readable at that viewport (list can scroll
+- [x] The history view is readable at that viewport (list can scroll
       vertically).
-- [ ] Desktop layout still works after the phone layout exists.
+- [x] Desktop layout still works after the phone layout exists.
 
 ## Implementation Notes
 
@@ -129,7 +129,54 @@ Full suite: 130/130, run 4 times in a row.
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+Checks: `npm run typecheck` clean (all 4 tsconfigs), `npm run lint`
+clean (35 files, 0 warnings/errors), `npm run build` succeeded (CSS
+bundle hash changed vs. pre-013: `index-DPT1LMJj.css`, confirming real
+style changes shipped). `npm test`: 130/130, run 7 times total across
+implement/test/validate with no flakes.
+
+Headless-Chrome walkthrough at a real 375x812 viewport (device-metrics
+override, touch emulation on), driven over the DevTools Protocol
+during both `/implement` and again after the CSS changes: guest
+register/login forms, signed-in-not-seated, seated-no-hand, a dealt
+hand scrolled down to the action controls, and the history view
+scrolled to a row — `document.documentElement.scrollWidth` never
+exceeded `clientWidth` at any of those five states, before or after
+the change (no width regression was ever present, so this change is
+purely a tap-target/padding improvement, not an overflow fix).
+Screenshots reviewed visually: no clipped or unreachable controls at
+any state, text wraps naturally, the history row wraps to two lines
+and stays readable. Measured real button/input sizes via
+`getBoundingClientRect()`: every button and input now renders at
+exactly 44px tall (was 38px before); the raise number input renders
+at exactly 96px wide (was 116px before, due to a content-box sizing
+mismatch the `box-sizing: border-box` reset fixed). A 1440x900 desktop
+pass after the change showed the existing centered, capped-width
+desktop layout unaffected — no overflow, same visual structure as
+before this feature.
+
+Acceptance criteria:
+- Login/tab usable at ~375px without losing controls to horizontal
+  scroll — pass. Confirmed at the guest and signed-in-not-seated
+  states; the layout never needed a fix here (`#app`'s relative
+  padding + `form`'s grid layout already worked), and inputs/buttons
+  are now comfortably sized rather than just technically visible.
+- Hole cards/board/stacks/pot/turn/actions tappable and readable, no
+  control clipped off-screen — pass. Confirmed on the dealt-hand
+  state; `[data-actions]`'s existing `flex-wrap: wrap` already let the
+  fold/call/all-in/raise controls flow onto their own line at 375px,
+  and they're now real 44px tap targets.
+- History view readable, list scrolls vertically — pass. Confirmed on
+  the history-open state; it's a normal in-document `<ul>`, so it
+  scrolls with the page like everything else — no special scroll
+  container was needed or added.
+- Desktop layout still works — pass. 1440x900 screenshot after the
+  change matches the pre-existing desktop layout (`#app`'s 36rem
+  `max-width` still centers and caps the content; the new
+  `@media (max-width: 480px)` rule doesn't touch anything above
+  480px).
+
+All criteria pass. `status: accept`, `STATE.md` phase set to `accept`.
 
 ## Acceptance Log
 

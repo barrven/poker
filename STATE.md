@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 4
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 013-responsive-layout
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — validated 013-responsive-layout (pass: typecheck/lint/build clean, 130/130 tests x7 runs, headless-Chrome walkthrough at 375px + 1440px desktop, all 4 acceptance criteria checked); phase set to `accept`
 - 2026-09-20 — tested 013-responsive-layout (5 new tests in tests/responsive-layout.test.ts, 130/130 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 013-responsive-layout (box-sizing reset, 44px touch targets, phone padding media query, verified via headless Chrome at 375px); phase set to `test`
 - 2026-09-20 — accepted 012-hand-history (accept and continue); active 013-responsive-layout; phase set to `implement`
