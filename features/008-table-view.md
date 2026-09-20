@@ -1,7 +1,7 @@
 ---
 id: 008
 title: Readable table view
-status: accept
+status: done
 priority: medium
 iteration: 4
 ---
@@ -142,4 +142,7 @@ All criteria pass. `status: accept`, `STATE.md` phase set to `accept`.
 
 ## Acceptance Log
 
-_Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+2026-09-20 — User selected "Accept and continue" via AskUserQuestion
+after reviewing the summary (action log + turn indicator + acting-seat
+highlight, all 7 acceptance criteria passing, validation results).
+Decision: accepted. Slice continues with 012 (Hand history) next.

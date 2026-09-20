@@ -7,6 +7,14 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-20 — Readable table view (features/008-table-view.md)
+
+The table now shows whose turn it is, highlights the acting seat, and
+lists recent actions (fold/check/call/bet/raise/all-in with amounts,
+tagged by street) alongside the existing hole cards, board, stacks,
+pot, button, and blinds. Opponents' hole cards stay hidden until
+showdown, as before.
+
 ## 2026-09-20 — Rebuy and play-money top-up (features/011-rebuy-topup.md)
 
 If you bust at the table, you can now rebuy 200 chips straight from
