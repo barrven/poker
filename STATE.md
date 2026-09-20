@@ -3,9 +3,9 @@
 This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
-- **Outer iteration:** 4
+- **Outer iteration:** 5
 - **Phase:** retro
-- **Active feature:** none (iteration 4 slice complete)
+- **Active feature:** none — v1 complete, paused for user play-testing
 - **Last updated:** 2026-09-20
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — retro (iteration 4): all 19 core requirements shipped, backlog empty, no spec changes needed; user chose to play-test and pause rather than start new scope; outer iteration bumped to 5; phase stays `retro` (v1 complete for now)
 - 2026-09-20 — accepted 013-responsive-layout; iteration 4 slice complete (008, 012, 013 all done); phase set to `retro`
 - 2026-09-20 — validated 013-responsive-layout (pass: typecheck/lint/build clean, 130/130 tests x7 runs, headless-Chrome walkthrough at 375px + 1440px desktop, all 4 acceptance criteria checked); phase set to `accept`
 - 2026-09-20 — tested 013-responsive-layout (5 new tests in tests/responsive-layout.test.ts, 130/130 total, 4 stable runs); phase set to `validate`
