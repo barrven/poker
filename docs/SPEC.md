@@ -90,6 +90,25 @@ Numbered, testable statements. These are what `/features` decomposes into a back
 19. The table and history views are playable on a desktop browser and on
     a phone browser: cards, stacks, action controls, login, and history
     remain usable without a desktop layout.
+20. A logged-out visitor sees the login form by default — not login and
+    register forms together on one page.
+21. Registration is a separate view, reached via a link from the login
+    page (the standard login-first pattern).
+22. Once logged in, the app uses a standard, responsive app-shell layout
+    in place of an ad hoc one.
+23. The logged-in layout has a top menu bar with logout, profile, and
+    settings.
+24. The interface uses images and poker-themed icons for visual style
+    throughout, not just plain text/controls.
+25. The default logged-in view is the player's hand history.
+26. There is a visible way to add more chips to the tab (the existing
+    top-up flow) from the logged-in dashboard.
+27. The table view shows real card images — for the player's own hole
+    cards and for the community cards (flop/turn/river) — using the SVG
+    artwork in `card-svgs/`. This is the top-priority visual change.
+28. The table view arranges seats around a table shape (oval/circular),
+    with the five computer opponents positioned around it — not stacked
+    in a column — so it resembles a real poker table.
 
 ## Non-goals
 
@@ -122,6 +141,9 @@ Explicitly out of scope, so `/features` doesn't invent work for it.
   required for v1.
 - Passwords hashed with a standard password hash (not reversible, not
   a single SHA).
+- Card artwork for hole cards and community cards comes from the SVG
+  files in `card-svgs/` (rank+suit filenames, plus a card-back image for
+  hidden cards) rather than text or placeholder rendering.
 - Code is linted (a linter matching the TypeScript/Vite/Node stack) via
   an `npm run lint` script that passes with no errors, alongside
   typecheck and build. Currently Biome — `typescript-eslint` has a hard
@@ -131,11 +153,10 @@ Explicitly out of scope, so `/features` doesn't invent work for it.
 
 ## Open Questions
 
-- A single recreational AI difficulty shipped in iteration 2 (hand
-  strength + position + pot odds, see features/009-ai-opponents.md) —
-  not yet play-tested/confirmed by the user. Revisit whether it feels
-  right (tight-passive vs loose-aggressive) once tried, and whether more
-  than one difficulty is wanted later.
+- The single recreational AI difficulty (hand strength + position + pot
+  odds, see features/009-ai-opponents.md) has now been play-tested by
+  the user and confirmed fine for now. Whether more than one difficulty
+  is wanted later is still open.
 - Any table chrome beyond a readable felt (felt color, chip look, card
   backs) the user cares about up front?
 
@@ -160,3 +181,14 @@ _Appended by `/retro` — what changed about the spec itself and why._
   update the AI-strength Open Question to reflect that iteration 2
   shipped a single recreational difficulty (feature 009), not yet
   play-tested by the user
+- 2026-09-20 — retro (iteration 4) confirmed all functionality shipped and
+  paused for play-testing; this /spec revision follows that play-test:
+  functionality is fine, but the UI needs a full visual overhaul. Added
+  requirements 20-28 covering a standard login-then-register flow (not
+  both forms on one page), a standard responsive app-shell with a top
+  menu bar (logout/profile/settings), poker-themed iconography, hand
+  history as the default logged-in view, a visible chip top-up action,
+  real card images (from the user-supplied `card-svgs/` artwork) for
+  hole and community cards, and a table view with seats arranged around
+  an oval/circular table instead of a column. Card image sourcing also
+  added to Constraints.
