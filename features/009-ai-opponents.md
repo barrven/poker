@@ -1,7 +1,7 @@
 ---
 id: 009
 title: Computer opponents
-status: validating
+status: accept
 priority: medium
 iteration: 2
 ---
@@ -15,16 +15,16 @@ solver. They act in a timely way so a hand can finish.
 
 ## Acceptance Criteria
 
-- [ ] When action is on a computer seat, that seat acts without human
+- [x] When action is on a computer seat, that seat acts without human
       input and within a short, bounded delay (fast enough that a hand
       does not stall).
-- [ ] Computer actions are always legal for the current betting state.
-- [ ] Over a sample of hands, computers do not take the same action
+- [x] Computer actions are always legal for the current betting state.
+- [x] Over a sample of hands, computers do not take the same action
       regardless of cards (not a constant fold, and not a constant
       all-in).
-- [ ] The strategy may use hole-card strength, position, and pot; it
+- [x] The strategy may use hole-card strength, position, and pot; it
       must not be a GTO solver or require an external service.
-- [ ] A single default difficulty is enough for this feature.
+- [x] A single default difficulty is enough for this feature.
 
 ## Implementation Notes
 
@@ -207,7 +207,49 @@ untested against a rotating button).
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-19 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: pass
+- typecheck: pass
+- build: pass (bundle hash unchanged from 007 — correctly, this feature
+  is backend-only, see Implementation Notes)
+- tests: pass, `npm test` re-run 3x plus 20x during `/test` — 105/105
+  every time, real (unseeded) dealing throughout
+
+Live walkthrough already done during `/implement`: dealt a hand,
+confirmed varied real decisions (one computer folded a weak hand,
+others called with a normal-strength hand) rather than a scripted
+pattern.
+
+1. **Pass.** Computer actions resolve synchronously within the same
+   request as the triggering human action (or hand start) — no polling,
+   no stall. No artificial delay added; reasoning in Implementation
+   Notes (no streaming channel exists yet for a human to perceive one).
+2. **Pass.** `decide()` only ever returns an action drawn from the
+   `legalActions` it was given (`tests/ai.test.ts`, sampled across a
+   wide grid of hands/boards/bet contexts); `applyAction` throws loudly
+   if this were ever violated (`server/table.ts`), rather than silently
+   skipping — a stronger guarantee than a passive test alone.
+3. **Pass.** Pocket aces and 7-2 offsuit produce different decisions
+   under identical pressure (`tests/ai.test.ts`); a strong hand doesn't
+   always fold facing a bet, and doesn't always shove when checking is
+   available — both directions of "not constant" verified. Live: one
+   computer folded, four called on the same deal.
+4. **Pass.** `decide()` uses hand strength (preflop heuristic or 007's
+   real evaluator postflop), position (`positionScore`), and pot odds
+   (`toCall / (pot + toCall)`) — no external service, no solver, just
+   arithmetic thresholds.
+5. **Pass.** `decide()` always returns a single, fixed policy — no
+   difficulty parameter exists to vary.
+
+Beyond the acceptance criteria: this feature's stress testing (see Test
+Notes) found and fixed four real, pre-existing correctness bugs in the
+betting/settlement engine (006/007) that the check/call-only placeholder
+had never exercised (it never bet/raised, and never got short-stacked
+enough to hit a blind-capping edge). All four are now covered by
+permanent regression tests. No new deviations beyond what's recorded in
+Implementation Notes.
 
 ## Acceptance Log
 
