@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 4
-- **Phase:** test
+- **Phase:** validate
 - **Active feature:** 012-hand-history
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — tested 012-hand-history (7 new tests in tests/hand-history.test.ts, 125/125 total, 4 stable runs); phase set to `validate`
 - 2026-09-20 — implemented 012-hand-history (hand_history SQLite table, /api/history, history toggle view); phase set to `test`
 - 2026-09-20 — accepted 008-table-view (accept and continue); active 012-hand-history; phase set to `implement`
 - 2026-09-20 — validated 008-table-view (pass: typecheck/lint/build/118 tests clean, live curl walkthrough of action log + turn indicator, all 7 acceptance criteria checked); phase set to `accept`

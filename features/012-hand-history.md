@@ -1,7 +1,7 @@
 ---
 id: 012
 title: Hand history
-status: testing
+status: validating
 priority: medium
 iteration: 4
 ---
@@ -80,7 +80,56 @@ acceptance criteria calls out specifically.
 
 ## Test Notes
 
-_Filled in during `/test` — what's covered, what's deliberately not._
+New file `tests/hand-history.test.ts` (7 tests), plus a fix to
+`tests/scaffold.test.ts`'s schema-version assertion (`"3"` -> `"4"`,
+since `server/db.ts`'s `schemaVersion` bumped for the new table).
+
+Covered:
+- `classifyHandResult()` unit tests: not in winners -> lost, sole
+  winner -> won, human + another seat both in winners -> split
+  (exhaustive over the classifier's own logic, no HTTP needed).
+- Settling any hand writes exactly one history row with the right
+  blinds (1/2), 2 hole cards, a board length that's always 0/3/4/5,
+  a won/lost/split result, and a numeric delta; cross-checked against
+  the settlement response itself (if the human didn't win, the row
+  must say "lost").
+- A hand the human folds still gets a row with hole cards and a delta
+  (AC6's first half) — probabilistic search up to 30 hands for a fold,
+  same "generous budget over real randomness" pattern as every other
+  feature's tests in this repo, since there's no seeded rng over HTTP.
+- Privacy: a second account's `/api/history` is empty after the first
+  account has played hands (AC3).
+- Auth: a logged-out `GET /api/history` is 401.
+- Persistence across a restart: play a hand, close the app/db, reopen
+  the *same on-disk data directory* as a fresh `openDb`/`createApp`
+  pair, confirm the row is still there (AC4 — a page refresh doesn't
+  restart the process, but this is a strictly harder version of the
+  same durability claim, and it's what actually distinguishes "written
+  to SQLite" from "kept in the in-memory table session").
+- Frontend wiring: `/api/history`, the `#history-toggle` button, and
+  `renderHistory`'s `data-history` markup, by source inspection (same
+  regex pattern used for the rest of this repo's UI, which has no
+  browser test runner).
+
+Deliberately not covered:
+- A preflop fold-win specifically producing `board: []` in a
+  *committed* test — confirmed manually during implementation via a
+  live curl walkthrough (a human fold that let the remaining computers
+  play to a real river showdown recorded the correct partial board;
+  the empty-board path is the same `hand.board` snapshot mechanism,
+  exercised whenever `settleWithoutShowdown` fires before any street is
+  dealt). Not asserted in the suite because forcing a specific fold
+  round without a seeded rng would need either flaky retries or
+  reaching into `table.ts` with a controlled rng — this repo
+  deliberately never exposes seeded randomness, including from tests,
+  to keep every test exercising the same real path production traffic
+  does.
+- Exact history-view visual styling — `[data-history-row]` CSS is
+  structural only, per the same "readable, not themed" scope as 008.
+- Pagination/limit beyond the default 50-row cap — not in AC, and no
+  UI control for it exists.
+
+Full suite: 125/125, run 4 times in a row.
 
 ## Validation Notes
 
