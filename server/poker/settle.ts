@@ -45,6 +45,17 @@ export function awardPotsAtShowdown(
     }
     const eligibleSeats = layerContributors.filter((c) => !c.folded).map((c) => c.seat);
     if (eligibleSeats.length === 0) {
+      // Every contributor to this layer has folded (a rare sequencing: a
+      // player commits more than everyone else still in, then folds on a
+      // later street while the remaining players are short-stacked
+      // all-ins below that level). Nobody is left to contest it, so it
+      // can't be "won" — refund each contributor exactly what they put
+      // into this specific layer rather than letting it vanish from the
+      // table.
+      const perSeatShare = layerAmount / layerContributors.length;
+      for (const c of layerContributors) {
+        deltas.set(c.seat, (deltas.get(c.seat) ?? 0) + perSeatShare);
+      }
       continue;
     }
     const ranked = eligibleSeats.map((seat) => {

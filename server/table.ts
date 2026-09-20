@@ -7,6 +7,7 @@ import {
   startBettingRound,
   startNextStreet,
 } from "./poker/betting.js";
+import { decide } from "./poker/ai.js";
 import type { Card } from "./poker/deck.js";
 import { dealFlop, dealHand, dealRiver, dealTurn } from "./poker/hand.js";
 import type { HandState } from "./poker/hand.js";
@@ -122,6 +123,23 @@ function newSeats(): Seat[] {
   ];
 }
 
+// A seat can only ever post what it has — without feature 010 (deferred)
+// to replace a busted computer's stack before the next deal, a seat in the
+// fixed SB/BB position (button rotation isn't implemented yet either)
+// could otherwise be asked to post a blind larger than its remaining
+// stack, driving it negative. Cap each post at the seat's actual stack (an
+// all-in blind), same as every other stack-affecting action in this
+// engine (call, bet, raise, all-in) already does.
+export function capBlindPosts(
+  blindsPosted: { seat: number; amount: number }[],
+  seats: Seat[],
+): { seat: number; amount: number }[] {
+  return blindsPosted.map((post) => ({
+    seat: post.seat,
+    amount: Math.min(post.amount, seats[post.seat].stack),
+  }));
+}
+
 export type SitResult =
   | { ok: true; tab: number; stack: number }
   | { ok: false; reason: "insufficient" | "already-seated" };
@@ -172,27 +190,46 @@ function syncStacks(session: TableSession): void {
   }
 }
 
-// Placeholder strategy for computer seats: always check if free, otherwise
-// call (for less, if the stack is short). Never bets, raises, or folds.
-// This is deliberately dumb — real hand-strength/position strategy is
-// feature 009 ("Computer opponents"). Without this, a hand dealt today
-// would stall forever on a computer's turn, since nothing else drives
-// their actions yet.
+// Distance (normalized 0..1) from the seat that acts first post-flop
+// (left of the button) to `seat` — a simple, real position signal: 0 is
+// the worst position (acts first every street), 1 is the best (the
+// button, who acts last).
+function positionScore(seat: number, button: number): number {
+  const actingFirst = (button + 1) % SEAT_COUNT;
+  const distance = (seat - actingFirst + SEAT_COUNT) % SEAT_COUNT;
+  return distance / (SEAT_COUNT - 1);
+}
+
+// Real computer strategy (feature 009): a single recreational policy using
+// hand strength (a preflop heuristic, or — once there's a board — the same
+// evaluator showdown uses), position, and pot odds. See server/poker/ai.ts.
 function advanceComputerActions(session: TableSession): void {
   while (
+    session.hand &&
     session.betting &&
     session.betting.actingSeat !== null &&
     session.seats[session.betting.actingSeat].kind === "computer"
   ) {
+    const hand = session.hand;
     const seat = session.betting.actingSeat;
-    const toCall =
-      session.betting.currentBet - session.betting.seats[seat].streetContribution;
-    const action: Action = toCall > 0 ? "call" : "check";
-    const result = applyAction(session.betting, seat, action);
+    const seatBet = session.betting.seats[seat];
+    const decision = decide({
+      holeCards: hand.holeCards[seat],
+      board: hand.board,
+      legalActions: legalActions(session.betting, seat),
+      toCall: session.betting.currentBet - seatBet.streetContribution,
+      pot: session.betting.pot,
+      currentBet: session.betting.currentBet,
+      minRaiseSize: session.betting.minRaiseSize,
+      positionScore: positionScore(seat, hand.button),
+    });
+    const result = applyAction(session.betting, seat, decision.action, decision.amount);
     if (!result.ok) {
-      // Unreachable in practice: check/call are always legal whenever this
-      // placeholder is invoked, by construction of the betting engine.
-      break;
+      // `decide` only ever returns an action from the seat's own
+      // `legalActions`, with an affordable minimum-sized amount when it
+      // bets or raises — this would mean a real bug in the strategy or the
+      // betting engine, not a reachable runtime condition to swallow.
+      throw new Error(`computer seat ${seat} chose an illegal action: ${result.reason}`);
     }
     session.betting = result.state;
     syncStacks(session);
@@ -367,13 +404,14 @@ export function startHand(
   session.handStartStack = session.seats[HUMAN_SEAT].stack;
 
   const hand = dealHand(FIRST_HAND_BUTTON, rng);
-  for (const post of hand.blindsPosted) {
+  const postedBlinds = capBlindPosts(hand.blindsPosted, session.seats);
+  for (const post of postedBlinds) {
     session.seats[post.seat].stack -= post.amount;
   }
   const startingSeat = (hand.bigBlindSeat + 1) % SEAT_COUNT;
   session.betting = startBettingRound(
     session.seats.map((s) => s.stack),
-    hand.blindsPosted,
+    postedBlinds,
     startingSeat,
     BIG_BLIND,
     BIG_BLIND,

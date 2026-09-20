@@ -102,11 +102,24 @@ export function legalActions(state: BettingState, seat: number): Action[] {
   }
   const toCall = state.currentBet - s.streetContribution;
   const actions: Action[] = ["fold"];
+  const hasRaiseRoom = s.stack > toCall && s.stack - toCall >= state.minRaiseSize;
   if (toCall <= 0) {
-    actions.push("check", "bet");
+    // toCall <= 0 only means this seat doesn't owe anything more — it does
+    // NOT mean the street is unopened. The big blind's preflop "option"
+    // (everyone just called) is exactly this: toCall is 0, but
+    // currentBet is still the blind they already posted, so raising here
+    // is a raise on an existing wager, not a fresh opening bet.
+    actions.push("check");
+    if (state.currentBet === 0) {
+      if (s.stack >= state.minRaiseSize) {
+        actions.push("bet");
+      }
+    } else if (hasRaiseRoom) {
+      actions.push("raise");
+    }
   } else {
     actions.push("call");
-    if (s.stack > toCall && s.stack - toCall >= state.minRaiseSize) {
+    if (hasRaiseRoom) {
       actions.push("raise");
     }
   }
