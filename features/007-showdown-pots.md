@@ -1,7 +1,7 @@
 ---
 id: 007
 title: Showdown, pots, and hand ranking
-status: validating
+status: accept
 priority: high
 iteration: 2
 ---
@@ -16,23 +16,23 @@ stack changes update the running tab for the human.
 
 ## Acceptance Criteria
 
-- [ ] If every opponent folds, the last remaining player is awarded the
+- [x] If every opponent folds, the last remaining player is awarded the
       pot without a showdown; folded hole cards stay hidden.
-- [ ] After the river betting round with two or more players still in,
+- [x] After the river betting round with two or more players still in,
       a showdown compares standard high-hand rankings (high card
       through royal flush) using the best five cards from each
       player's two hole cards plus the five board cards.
-- [ ] The winning hand (or winning hands) is awarded the pot. Ties
+- [x] The winning hand (or winning hands) is awarded the pot. Ties
       split the pot as evenly as whole chips allow (odd chip to the
       first winning seat left of the button, or an equivalent documented
       rule applied consistently).
-- [ ] When players are all-in for different amounts, side pots are
+- [x] When players are all-in for different amounts, side pots are
       built and awarded only among the players who contributed to each
       pot.
-- [ ] After settlement, the human's table stack reflects the result,
+- [x] After settlement, the human's table stack reflects the result,
       and the running tab in SQLite is updated for that stack change
       (tab + table stack remains conserved aside from computer stacks).
-- [ ] Hand-rank evaluation is unit-testable without a browser
+- [x] Hand-rank evaluation is unit-testable without a browser
       (straight vs flush, full house vs trips, wheel straight, board
       playing, ties).
 
@@ -214,7 +214,59 @@ generalizes, but a 3+-level scenario isn't separately exercised).
 
 ## Validation Notes
 
-_Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+2026-09-19 — pass. Ready for `/accept`.
+
+Project checks:
+- lint: pass
+- typecheck: pass
+- build: pass
+- tests: pass (`npm test` — 94/94: 9 rank + 6 settle + 5 showdown +
+  17 betting + 10 action + 8 hand + 9 deal + 4 lint + 8 table + 7 auth +
+  5 tab + 6 scaffold)
+
+Live walkthrough already done during `/implement` (see Test Notes) on an
+isolated instance: registered, sat, dealt, called preflop, checked
+through flop/turn/river, and reached a real showdown — seat 5's "2d,4c"
+on a "4s,Qh,2c,8c,9h" board correctly evaluated as Two Pair, correctly
+beat four Pair hands and the human's High Card, and was awarded the
+12-chip pot (stack 198→210). Confirmed the human's tab moved 1000→800
+(sit) →798 (lost 2 chips this hand) in SQLite directly. Confirmed
+"Deal next hand" / `data-settlement` are present in the built
+`dist/client/assets/*.js`, not just dev source.
+
+1. **Pass (mechanically — not reachable live today, see Test Notes).**
+   `awardPotWithoutShowdown` gives the whole pot to the sole non-folded
+   seat (`settle.test.ts`); `roundStatus` detects "one-remaining"
+   correctly at every fold count (`betting.test.ts`, carried from 006).
+   Not live-reachable because the placeholder computer strategy (006)
+   never folds — waits on feature 009's real AI.
+2. **Pass.** Live showdown reached after a full preflop→river sequence
+   with no further folds; `evaluateBestHand` compares all 21 five-card
+   combinations of hole+board per seat (`rank.test.ts` covers every
+   category ordering plus the wheel/steel-wheel special cases).
+3. **Pass.** Winners awarded via `compareHandRank`; ties split evenly
+   with the documented odd-chip rule (`settle.test.ts`'s dedicated tie
+   test — AC3 explicitly permits "an equivalent documented rule").
+4. **Pass.** Side pots built per contribution level, eligible only to
+   non-folded contributors at or above that level — a short all-in
+   winning only its own-sized pot, and a folded seat still funding (but
+   never winning) a pot, are both dedicated tests in `settle.test.ts`.
+5. **Pass.** Live: tab in SQLite updated immediately on hand settlement
+   (798), not deferred to leave — matches spec requirement 18 exactly.
+   `showdown.test.ts`'s outcome-agnostic invariant test
+   (`tab == tabBeforeHand + (finalStack - 200)`) additionally covers the
+   win case (not just the loss the live walkthrough happened to hit),
+   run 5x locally against real random cards with no failures.
+6. **Pass.** `rank.test.ts` and `settle.test.ts` both import and test
+   `server/poker/*` modules directly with no server, no HTTP, no
+   browser — pure functions in, plain objects out.
+
+No new deviations beyond what's already recorded in Implementation
+Notes (fixed human seat 0 and first-hand button 0, carried from 005;
+the placeholder computer strategy and the short-all-in reopening
+simplification, carried from 006) — all deliberate and documented
+there, plus this feature's own new simplification (odd-chip tie-break
+by ascending seat index rather than button-relative order).
 
 ## Acceptance Log
 
