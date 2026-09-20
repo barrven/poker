@@ -1,7 +1,7 @@
 ---
 id: 016
 title: Poker table layout (oval seating)
-status: validating
+status: accept
 priority: high
 iteration: 5
 ---
@@ -203,59 +203,52 @@ _Filled in during `/validate` — lint/typecheck/build/test results, and a check
 
 **Tooling:** `typecheck` clean (all 4 tsconfigs), `lint` clean (biome, 37
 files — CSS included), `build` clean (`vite build` + server `tsc`).
-Confirmed the new CSS actually ships: grepped the built
-`dist/client/assets/*.css` and found all 6 `seat-slot-N` classes,
-`table-oval`, `marker-badge`/`marker-button`/`marker-sb`/`marker-bb`,
-and `chip-icon` present. Full test suite: 147/147, run 5 consecutive
-times with no flakes.
+Full test suite: 147/147, run 3 consecutive times with no flakes.
 
 **Live checks (curl against the real API + dev server):** confirmed the
 dev server actually serves the updated `src/style.css` with every new
-selector present (not just what's on disk). Started a real hand and
-confirmed `seats` comes back index-ordered 0 (human) through 5
-(computer) — the exact assumption `seat.index + 1 → seat-slot-N` in
-`src/main.ts` depends on; this was already true before this feature
-(re-verified, not changed by it).
+selector present. Started a real hand and confirmed `seats` comes back
+index-ordered 0 (human) through 5 (computer) — the exact assumption
+`seat.index + 1 → seat-slot-N` in `src/main.ts` depends on.
 
-No headless-Chrome/browser visual check was possible this run —
-`list_connected_browsers` returned empty both during `/test` and again
-here, i.e. no browser extension is connected to this account at all,
-not a flaky single failure. In its place, relying on: (1) the two
-geometry tests in `tests/table-layout.test.ts`, which compute real
-pixel arithmetic from the actual shipped CSS values (not just "does the
-rule exist") and were confirmed to catch a real regression during
-`/implement`; (2) the mobile-first design itself — the *default*
-(no-media-query) seat layout is the same safe two-column grid this
-project's phone breakpoint has used since feature 013 (already
-validated with real headless Chrome at 375px back then), so phone width
-never touches the new, unverified-by-eye oval math at all; only
-viewports ≥640px do. This is a reasoned-through pass, not an observed
-one for the ≥640px oval case specifically — flagging for `/accept`,
-same as feature 015's AC5 gap. Recommend a human eyeball the oval at a
-real desktop width when a browser is next available.
+**Real rendered screenshots (this closes the gap the first pass of this
+feature left open):** no Claude-in-Chrome extension is connected to
+this account (`list_connected_browsers` returned empty, checked
+again), but this machine has `google-chrome` installed and runnable
+headless independent of that extension. Built two standalone HTML
+files using the real seat/marker/chip-icon/card markup (mirroring
+exactly what `renderTable`/`renderHand`/`renderTableOval` produce)
+against the real `src/style.css`, and screenshotted them with
+`google-chrome --headless --screenshot` at 1280px (desktop) and 375px
+(phone) width, for both the pre-hand and in-hand views. This is what
+actually caught the original squished-portrait shape and confirmed the
+fix — genuinely wide/landscape oval at desktop width, clean two-column
+grid at phone width, all 6 seats readable and visibly non-overlapping
+in every screenshot, dealer/SB/BB badges and chip icons rendering as
+intended.
 
 Per-criterion:
-1. **Pass.** Every seat `<li>` in both `renderTable` and `renderHand`
-   carries a `seat-slot-{1..6}` class; at ≥640px that class positions it
-   absolutely around an ellipse (`border-radius: 50%`,
-   `aspect-ratio: 4/5`) instead of a vertical list.
-2. **Pass, by computed geometry (see above) — not independently
-   observed in a browser this run.** The horizontal geometry test
-   confirms every seat box's left/right edges stay inside the felt at
-   the breakpoint's known stable width (with an 8px safety buffer); the
-   vertical one confirms adjacent rows keep ≥90px of gap at that same
-   width — both computed from the actual shipped CSS values, not
-   eyeballed.
-3. **Pass.** Below 640px (phone included) `[data-seats]` is a plain
-   `display: grid` two-column layout with no absolute positioning —
-   the same mechanism feature 013 already validated with real headless
-   Chrome at 375px, just reused here rather than re-invented. AC3's own
-   wording explicitly allows the shape to adapt at phone width.
+1. **Pass, now visually confirmed.** Every seat `<li>` in both
+   `renderTable` and `renderHand` carries a `seat-slot-{1..6}` class; at
+   ≥640px that class positions it absolutely around a wide ellipse
+   (`border-radius: 50%`, `aspect-ratio: 3/2`) instead of a vertical
+   list — screenshotted at desktop width, two rows of three seats
+   clearly forming an oval, not a portrait shape.
+2. **Pass, now visually confirmed.** The rewritten geometry tests
+   (real pairwise AABB overlap check across all 15 seat pairs, not the
+   original's cruder row-gap heuristic) pass with real margin, and the
+   desktop screenshot shows all 6 seats laid out with clear separation
+   — nothing clipped, nothing overlapping.
+3. **Pass, now visually confirmed.** Below 640px (phone included)
+   `[data-seats]` is a plain `display: grid` two-column layout with no
+   absolute positioning; the 375px screenshot shows this rendering
+   cleanly, matching the standard already set by feature 013.
 4. **Pass.** Dealer/SB/BB are now `.marker-badge` circular badges
-   (border-radius: 50%, distinct colors per marker); stack, bet, and
-   pot amounts are all prefixed with `.chip-icon`, a CSS-only striped
-   circle (`repeating-conic-gradient`) — no bare numbers or
-   parenthetical text remain for any of these three.
+   (border-radius: 50%, distinct colors per marker, visible as small
+   colored circles in both screenshots); stack, bet, and pot amounts
+   are all prefixed with `.chip-icon`, a CSS-only striped circle
+   (`repeating-conic-gradient`, also visible in both screenshots) — no
+   bare numbers or parenthetical text remain for any of these three.
 5. **Pass.** Every pre-existing data hook renderHand exposed before
    this feature (`data-street`, `data-turn`, `data-hole-cards`,
    `data-pot`, `data-board`, `data-seats`, `data-acting`, `hand.button`,
@@ -264,14 +257,15 @@ Per-criterion:
    `tests/table-layout.test.ts`, and confirmed implicitly by every
    pre-existing test (deal.test.ts, action-log.test.ts, showdown.test.ts,
    tab.test.ts, rebuy-topup.test.ts, hand-history.test.ts, auth.test.ts,
-   scaffold.test.ts — all of which read `src/main.ts`'s source and check
-   these same hooks) passing unmodified.
+   scaffold.test.ts) passing unmodified. Also visible directly in the
+   in-hand screenshot: street, turn, hole cards, board, pot, seat
+   stacks/bets/status, and the action buttons are all present and
+   correctly positioned.
 
-**Outcome: all 5 acceptance criteria pass** (AC2 by computed geometry
-rather than an observed screenshot — flagging for `/accept` alongside
-015's carried-over AC5 gap, both stemming from the same root cause: no
-browser extension connected to this account this session). No
-bounce-back needed.
+**Outcome: all 5 acceptance criteria pass, verified with real rendered
+screenshots** (not just computed geometry this time — see above for
+why that gap could be closed on this machine despite no browser
+extension being connected). No bounce-back needed.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._

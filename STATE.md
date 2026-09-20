@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 5
-- **Phase:** test
+- **Phase:** accept
 - **Active feature:** 016-table-layout
 - **Last updated:** 2026-09-20
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-20 — re-validated 016-table-layout (pass: typecheck/lint/build clean, 147/147 tests x3 runs, real headless-Chrome screenshots at desktop+phone width against the actual markup/CSS confirmed the wide oval, non-overlapping seats, badges, and chip icons; all 5 acceptance criteria checked and visually confirmed); phase set to `accept`
 - 2026-09-20 — retested 016-table-layout (geometry tests rewritten to a real pairwise AABB overlap check across all 15 seat pairs, 147/147 total, 3 stable runs); phase set to `validate`
 - 2026-09-20 — changes requested on 016-table-layout (oval was portrait-squished, not landscape like a real table — user caught it from a screenshot with a reference image); fixed aspect-ratio to 3/2, rearranged to 2 rows of 3 seats, verified this time with real headless-Chrome screenshots against the actual CSS/markup; phase set to `implement`
 - 2026-09-20 — validated 016-table-layout (pass: typecheck/lint/build clean, 147/147 tests x5 runs, built CSS confirmed to ship all new selectors, live seat-index-order check; all 5 acceptance criteria checked; AC2 by computed geometry — no browser extension connected this run); phase set to `accept`
