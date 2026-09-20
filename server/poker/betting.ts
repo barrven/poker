@@ -25,6 +25,25 @@ export type ApplyActionResult =
   | { ok: true; state: BettingState; status: RoundStatus }
   | { ok: false; reason: string };
 
+// First seat at or after `from` (wrapping) that can still act. Used both to
+// resolve a street's opening actor and, defensively, by any future caller
+// that needs to skip folded/all-in seats starting from an arbitrary seat.
+export function firstToAct(seats: SeatBet[], from: number): number {
+  for (let i = 0; i < seats.length; i++) {
+    const candidate = (from + i) % seats.length;
+    if (!seats[candidate].folded && !seats[candidate].allIn) {
+      return candidate;
+    }
+  }
+  return from;
+}
+
+function finalize(state: Omit<BettingState, "actingSeat">, candidateSeat: number): BettingState {
+  const withCandidate: BettingState = { ...state, actingSeat: candidateSeat };
+  const status = roundStatus(withCandidate);
+  return { ...withCandidate, actingSeat: status.complete ? null : candidateSeat };
+}
+
 export function startBettingRound(
   stacks: number[],
   contributions: { seat: number; amount: number }[],
@@ -50,7 +69,27 @@ export function startBettingRound(
       seat.allIn = true;
     }
   }
-  return { seats, pot, currentBet, minRaiseSize, actingSeat: startingSeat };
+  return finalize({ seats, pot, currentBet, minRaiseSize }, firstToAct(seats, startingSeat));
+}
+
+// Moves to a new street: carries `pot` and each seat's `totalContribution`
+// forward (a fresh `startBettingRound` would wrongly reset them to 0), and
+// resets only the per-street bookkeeping (`streetContribution`, `hasActed`,
+// `currentBet`) for the new round of betting.
+export function startNextStreet(
+  previous: BettingState,
+  startingSeat: number,
+  minRaiseSize: number,
+): BettingState {
+  const seats: SeatBet[] = previous.seats.map((s) => ({
+    ...s,
+    streetContribution: 0,
+    hasActed: false,
+  }));
+  return finalize(
+    { seats, pot: previous.pot, currentBet: 0, minRaiseSize },
+    firstToAct(seats, startingSeat),
+  );
 }
 
 export function legalActions(state: BettingState, seat: number): Action[] {
@@ -83,7 +122,7 @@ function resetOthersActed(seats: SeatBet[], exceptSeat: number): void {
   }
 }
 
-function isRoundComplete(state: BettingState): RoundStatus {
+export function roundStatus(state: BettingState): RoundStatus {
   const active = state.seats.filter((s) => !s.folded);
   if (active.length <= 1) {
     return { complete: true, reason: "one-remaining" };
@@ -96,17 +135,6 @@ function isRoundComplete(state: BettingState): RoundStatus {
     return { complete: true, reason: "all-called" };
   }
   return { complete: false };
-}
-
-function nextActingSeat(seats: SeatBet[], from: number): number {
-  for (let i = 1; i <= seats.length; i++) {
-    const candidate = (from + i) % seats.length;
-    const seat = seats[candidate];
-    if (!seat.folded && !seat.allIn) {
-      return candidate;
-    }
-  }
-  return from;
 }
 
 export function applyAction(
@@ -246,10 +274,10 @@ export function applyAction(
     minRaiseSize,
     actingSeat: state.actingSeat,
   };
-  const status = isRoundComplete(provisional);
+  const status = roundStatus(provisional);
   const finalState: BettingState = {
     ...provisional,
-    actingSeat: status.complete ? null : nextActingSeat(seats, seat),
+    actingSeat: status.complete ? null : firstToAct(seats, seat + 1),
   };
   return { ok: true, state: finalState, status };
 }

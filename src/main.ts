@@ -26,6 +26,13 @@ type HandSeatView = {
   allIn: boolean;
   streetContribution: number;
 };
+type SettlementResult = {
+  reason: string;
+  pot: number;
+  winners: { seat: number; delta: number }[];
+  revealed?: { seat: number; cards: string[]; category: string }[];
+};
+
 type HandView = {
   button: number;
   smallBlindSeat: number;
@@ -40,6 +47,7 @@ type HandView = {
   actingSeat: number | null;
   roundComplete: boolean;
   legalActions: Action[];
+  result: SettlementResult | null;
   seats: HandSeatView[];
 };
 
@@ -152,6 +160,7 @@ function parseHandView(body: unknown): HandView | undefined {
     (b.actingSeat !== null && typeof b.actingSeat !== "number") ||
     typeof b.roundComplete !== "boolean" ||
     !Array.isArray(b.legalActions) ||
+    (b.result !== null && typeof b.result !== "object") ||
     !Array.isArray(b.seats)
   ) {
     return undefined;
@@ -170,6 +179,7 @@ function parseHandView(body: unknown): HandView | undefined {
     actingSeat: b.actingSeat as number | null,
     roundComplete: b.roundComplete,
     legalActions: b.legalActions as Action[],
+    result: b.result as SettlementResult | null,
     seats: b.seats as HandSeatView[],
   };
 }
@@ -323,9 +333,11 @@ function renderHand(hand: HandView): string {
     .join("");
   const boardText = hand.board.length ? hand.board.join(" ") : "—";
   const isHumanTurn = hand.actingSeat === 0 && hand.legalActions.length > 0;
-  const actionArea = isHumanTurn
-    ? renderActionControls(hand)
-    : `<p class="status" data-state="pending">${hand.roundComplete ? "Betting round complete." : "Waiting for other players…"}</p>`;
+  const actionArea = hand.result
+    ? renderSettlement(hand.result)
+    : isHumanTurn
+      ? renderActionControls(hand)
+      : `<p class="status" data-state="pending">${hand.roundComplete ? "Betting round complete." : "Waiting for other players…"}</p>`;
   return `
     <div data-hand>
       <p data-street>Street: ${escapeHtml(hand.street)}</p>
@@ -335,6 +347,35 @@ function renderHand(hand: HandView): string {
       <ul data-seats>${seatsHtml}</ul>
       ${actionArea}
       <p><button type="button" id="leave">Leave table</button></p>
+    </div>
+  `;
+}
+
+function seatLabel(seat: number): string {
+  return seat === 0 ? "You" : `Computer ${seat}`;
+}
+
+function renderSettlement(result: SettlementResult): string {
+  const winnersText = result.winners
+    .map((w) => `${escapeHtml(seatLabel(w.seat))} +${formatChips(w.delta)}`)
+    .join(", ");
+  const headline =
+    result.reason === "fold"
+      ? `${winnersText} (everyone else folded).`
+      : `Showdown — ${winnersText}.`;
+  const revealed = result.revealed?.length
+    ? `<ul data-revealed>${result.revealed
+        .map(
+          (r) =>
+            `<li>${escapeHtml(seatLabel(r.seat))}: ${escapeHtml(r.cards.join(" "))} (${escapeHtml(r.category)})</li>`,
+        )
+        .join("")}</ul>`
+    : "";
+  return `
+    <div data-settlement>
+      <p data-result>${escapeHtml(headline)}</p>
+      ${revealed}
+      <p><button type="button" id="deal" data-deal>Deal next hand</button></p>
     </div>
   `;
 }

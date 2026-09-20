@@ -1,8 +1,17 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { Action, BettingState } from "./poker/betting.js";
-import { applyAction, legalActions, startBettingRound } from "./poker/betting.js";
-import { dealHand } from "./poker/hand.js";
+import {
+  applyAction,
+  legalActions,
+  roundStatus,
+  startBettingRound,
+  startNextStreet,
+} from "./poker/betting.js";
+import type { Card } from "./poker/deck.js";
+import { dealFlop, dealHand, dealRiver, dealTurn } from "./poker/hand.js";
 import type { HandState } from "./poker/hand.js";
+import { categoryName, evaluateBestHand } from "./poker/rank.js";
+import { awardPotWithoutShowdown, awardPotsAtShowdown } from "./poker/settle.js";
 
 export const BUY_IN = 200;
 export const SMALL_BLIND = 1;
@@ -28,6 +37,13 @@ export type SeatView = {
   streetContribution: number;
 };
 
+export type SettlementResult = {
+  reason: "fold" | "showdown";
+  pot: number;
+  winners: { seat: number; delta: number }[];
+  revealed?: { seat: number; cards: Card[]; category: string }[];
+};
+
 export type HandView = {
   button: number;
   smallBlindSeat: number;
@@ -42,6 +58,7 @@ export type HandView = {
   actingSeat: number | null;
   roundComplete: boolean;
   legalActions: Action[];
+  result: SettlementResult | null;
   seats: SeatView[];
 };
 
@@ -49,6 +66,12 @@ type TableSession = {
   seats: Seat[];
   hand: HandState | null;
   betting: BettingState | null;
+  // Human's stack the instant the current (or most recently settled) hand
+  // started, before blinds — the baseline `syncHumanTab` diffs against so
+  // the running tab picks up each hand's net result (spec requirement 18),
+  // not just sit/leave.
+  handStartStack: number;
+  result: SettlementResult | null;
 };
 
 // In-memory only: no cards or betting yet, and a reload does not have to
@@ -114,7 +137,13 @@ export function sitDown(db: DatabaseSync, userId: number): SitResult {
   }
   const newTab = tab - BUY_IN;
   setTab(db, userId, newTab);
-  sessions.set(userId, { seats: newSeats(), hand: null, betting: null });
+  sessions.set(userId, {
+    seats: newSeats(),
+    hand: null,
+    betting: null,
+    handStartStack: 0,
+    result: null,
+  });
   return { ok: true, tab: newTab, stack: BUY_IN };
 }
 
@@ -170,6 +199,110 @@ function advanceComputerActions(session: TableSession): void {
   }
 }
 
+function advanceStreet(hand: HandState): HandState {
+  if (hand.street === "preflop") {
+    return dealFlop(hand);
+  }
+  if (hand.street === "flop") {
+    return dealTurn(hand);
+  }
+  if (hand.street === "turn") {
+    return dealRiver(hand);
+  }
+  throw new Error(`cannot advance past street ${hand.street}`);
+}
+
+function syncHumanTab(db: DatabaseSync, userId: number, session: TableSession): void {
+  const delta = session.seats[HUMAN_SEAT].stack - session.handStartStack;
+  if (delta === 0) {
+    return;
+  }
+  setTab(db, userId, tabOf(db, userId) + delta);
+}
+
+function settleWithoutShowdown(db: DatabaseSync, userId: number, session: TableSession): void {
+  const betting = session.betting;
+  if (!betting) {
+    return;
+  }
+  const winnerSeat = betting.seats.findIndex((s) => !s.folded);
+  const contributions = betting.seats.map((s, seat) => ({
+    seat,
+    folded: s.folded,
+    totalContribution: s.totalContribution,
+  }));
+  const results = awardPotWithoutShowdown(contributions, winnerSeat);
+  for (const r of results) {
+    session.seats[r.seat].stack += r.delta;
+  }
+  session.result = {
+    reason: "fold",
+    pot: betting.pot,
+    winners: results.map((r) => ({ seat: r.seat, delta: r.delta })),
+  };
+  syncHumanTab(db, userId, session);
+}
+
+function settleAtShowdown(db: DatabaseSync, userId: number, session: TableSession): void {
+  const betting = session.betting;
+  const hand = session.hand;
+  if (!betting || !hand) {
+    return;
+  }
+  const contributions = betting.seats.map((s, seat) => ({
+    seat,
+    folded: s.folded,
+    totalContribution: s.totalContribution,
+  }));
+  const contenders = hand.holeCards
+    .map((cards, seat) => ({ seat, holeCards: cards }))
+    .filter((entry) => !betting.seats[entry.seat].folded);
+  const results = awardPotsAtShowdown(contributions, hand.board, contenders);
+  for (const r of results) {
+    session.seats[r.seat].stack += r.delta;
+  }
+  session.result = {
+    reason: "showdown",
+    pot: betting.pot,
+    winners: results.map((r) => ({ seat: r.seat, delta: r.delta })),
+    revealed: contenders.map((c) => ({
+      seat: c.seat,
+      cards: c.holeCards,
+      category: categoryName(evaluateBestHand([...c.holeCards, ...hand.board]).category),
+    })),
+  };
+  syncHumanTab(db, userId, session);
+}
+
+// Drives the hand forward after any action changes who's on the clock:
+// lets computer seats act, and when a betting round completes, either
+// settles the hand (a fold-out, or a river showdown) or deals the next
+// street and starts its betting round — looping until either a human
+// decision is needed or the hand is fully settled.
+function progressHand(db: DatabaseSync, userId: number, session: TableSession): void {
+  while (session.hand && session.betting) {
+    advanceComputerActions(session);
+    if (session.betting.actingSeat !== null) {
+      return;
+    }
+    const status = roundStatus(session.betting);
+    if (!status.complete) {
+      return;
+    }
+    if (status.reason === "one-remaining") {
+      settleWithoutShowdown(db, userId, session);
+      return;
+    }
+    if (session.hand.street === "river") {
+      settleAtShowdown(db, userId, session);
+      return;
+    }
+    session.hand = advanceStreet(session.hand);
+    const startingSeat = (session.hand.button + 1) % SEAT_COUNT;
+    session.betting = startNextStreet(session.betting, startingSeat, BIG_BLIND);
+  }
+}
+
 function handView(session: TableSession): HandView {
   const hand = session.hand;
   const betting = session.betting;
@@ -192,6 +325,7 @@ function handView(session: TableSession): HandView {
     actingSeat: betting.actingSeat,
     roundComplete: betting.actingSeat === null,
     legalActions: legalActions(betting, HUMAN_SEAT),
+    result: session.result,
     seats: session.seats.map((seat, index) => ({
       index,
       kind: seat.kind,
@@ -211,7 +345,8 @@ export type StartHandResult =
 // is no rotation history yet (button rotation across hands is feature 010,
 // which is deferred), so any fixed, documented starting seat is a
 // reasonable default. `dealHand` itself is exercised directly with every
-// button position in tests, independent of this default.
+// button position in tests, independent of this default. Every hand dealt
+// this session reuses the same fixed button for the same reason.
 const FIRST_HAND_BUTTON = 0;
 
 export function startHand(
@@ -223,9 +358,14 @@ export function startHand(
   if (!session) {
     return { ok: false, reason: "not-seated" };
   }
-  if (session.hand) {
+  if (session.hand && !session.result) {
     return { ok: false, reason: "hand-in-progress" };
   }
+  session.hand = null;
+  session.betting = null;
+  session.result = null;
+  session.handStartStack = session.seats[HUMAN_SEAT].stack;
+
   const hand = dealHand(FIRST_HAND_BUTTON, rng);
   for (const post of hand.blindsPosted) {
     session.seats[post.seat].stack -= post.amount;
@@ -239,7 +379,7 @@ export function startHand(
     BIG_BLIND,
   );
   session.hand = hand;
-  advanceComputerActions(session);
+  progressHand(db, userId, session);
   return { ok: true, view: handView(session) };
 }
 
@@ -272,7 +412,7 @@ export function submitAction(
   if (!session) {
     return { ok: false, reason: "not-seated" };
   }
-  if (!session.hand || !session.betting) {
+  if (!session.hand || !session.betting || session.result) {
     return { ok: false, reason: "no-hand" };
   }
   const result = applyAction(session.betting, HUMAN_SEAT, action, amount);
@@ -281,6 +421,6 @@ export function submitAction(
   }
   session.betting = result.state;
   syncStacks(session);
-  advanceComputerActions(session);
+  progressHand(db, userId, session);
   return { ok: true, view: handView(session) };
 }
