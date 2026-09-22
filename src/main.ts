@@ -691,8 +691,8 @@ function renderActionControls(hand: HandView): string {
   } else if (hand.legalActions.includes("raise")) {
     const minTo = hand.currentBet + hand.minRaiseSize;
     raiseControl = `
-      <label>Raise to <input type="number" id="raise-amount" min="${minTo}" value="${minTo}" /></label>
       <button type="button" data-action="raise">Raise</button>
+      <label><input type="number" id="raise-amount" min="${minTo}" value="${minTo}" /></label>
     `;
   }
   return `<div data-actions>${buttons.join(" ")}${raiseControl}</div>`;

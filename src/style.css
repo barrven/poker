@@ -17,9 +17,13 @@ body {
 }
 
 #app {
-  max-width: 36rem;
+  /* max-width: 36rem; */
   margin: 0 auto;
   padding: 2rem 1.25rem;
+}
+
+#raise-amount{
+  width: 4rem;
 }
 
 /* Phone-usable layout (feature 013): #app's fluid max-width and every
@@ -172,7 +176,7 @@ button {
 }
 
 .card-img {
-  width: 2.6rem;
+  width: 5rem;
   height: auto;
   aspect-ratio: 5 / 7;
   border-radius: 0.2rem;
@@ -222,6 +226,7 @@ button {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.4rem;
+  width: 100%;
 }
 
 [data-seats] li {
