@@ -17,8 +17,6 @@ body {
 }
 
 #app {
-  /* max-width: 36rem; */
-  margin: 0 auto;
   padding: 2rem 1.25rem;
 }
 
@@ -26,11 +24,11 @@ body {
   width: 4rem;
 }
 
-/* Phone-usable layout (feature 013): #app's fluid max-width and every
-   below rule's relative units/flex-wrap already avoid horizontal
-   scrolling down to a 375px viewport (verified with headless Chrome at
-   375x812 across guest/seated/hand/history states) — the one real gap
-   was touch-target size, addressed below. Tighten the outer gutter a
+/* Phone-usable layout (feature 013): every below rule's relative
+   units/flex-wrap already avoid horizontal scrolling down to a 375px
+   viewport (verified with headless Chrome at 375x812 across
+   guest/seated/hand/history states) — the one real gap was
+   touch-target size, addressed below. Tighten the outer gutter a
    little further only on genuinely narrow screens, where the desktop
    2rem top padding is more waste than the phone screen can spare. */
 @media (max-width: 480px) {
@@ -288,8 +286,11 @@ button {
     position: relative;
     margin: 1.25rem auto;
     padding: 1.5rem 1rem;
-    width: 100%;
-    max-width: 33rem;
+    /* Fill most of the viewport at common desktop sizes (feature 019 —
+       #app no longer caps the page to a narrow column) while staying
+       clear of the viewport edges at very wide/narrow windows and
+       never growing absurdly large on ultra-wide monitors. */
+    width: min(92vw, 80rem);
     /* A real poker table is wide, not tall — 3:2 (matching a felt
        table's actual proportions), not the narrow portrait shape an
        earlier version of this rule mistakenly used. */
