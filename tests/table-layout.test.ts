@@ -117,14 +117,23 @@ function readSeatGeometry(mediaBlock: string): {
 } {
   const REM = 16;
 
-  const ovalMaxWidthRem = Number(
-    mediaBlock.match(/\.table-oval\s*\{[^}]*max-width:\s*(\d+(?:\.\d+)?)rem/)?.[1],
-  );
+  const [vwPercent, capRem] = (
+    mediaBlock.match(/\.table-oval\s*\{[^}]*width:\s*min\(\s*(\d+(?:\.\d+)?)vw\s*,\s*(\d+(?:\.\d+)?)rem\s*\)/) ?? []
+  )
+    .slice(1)
+    .map(Number);
   const [aspectW, aspectH] = (mediaBlock.match(/aspect-ratio:\s*(\d+)\s*\/\s*(\d+)/) ?? [])
     .slice(1)
     .map(Number);
-  assert.ok(ovalMaxWidthRem > 0 && aspectW > 0 && aspectH > 0, "could not read .table-oval sizing");
-  const feltWidthPx = ovalMaxWidthRem * REM;
+  assert.ok(vwPercent > 0 && capRem > 0 && aspectW > 0 && aspectH > 0, "could not read .table-oval sizing");
+  // .table-oval's width is viewport-relative (feature 019: `min(92vw,
+  // 80rem)`), not a fixed rem — so unlike before, there's no single
+  // "known width" once the breakpoint is active. Seat boxes are a fixed
+  // px size, so a bigger felt only ever gives them more room; the
+  // worst case (smallest felt, tightest clearance) is right at the
+  // breakpoint's own min-width, so that's what's checked here.
+  const BREAKPOINT_MIN_PX = 640;
+  const feltWidthPx = Math.min((vwPercent / 100) * BREAKPOINT_MIN_PX, capRem * REM);
   const feltHeightPx = (feltWidthPx * aspectH) / aspectW;
 
   // [data-seats] fills .table-oval exactly (inset: 0) — seat-slot-N
@@ -167,7 +176,7 @@ function readSeatGeometry(mediaBlock: string): {
 // actual rendered text height (see this feature's Validation Notes).
 const ESTIMATED_SEAT_BOX_HEIGHT_PX = 130;
 
-test("geometry check: every seat-slot's box stays fully inside the felt's safe interior at the oval breakpoint's known width", () => {
+test("geometry check: every seat-slot's box stays fully inside the felt's safe interior at the oval breakpoint's smallest (worst-case) width", () => {
   const { areaWidthPx, areaHeightPx, boxWidthPx, slots } = readSeatGeometry(readOvalMediaBlock(readCss()));
   const halfW = boxWidthPx / 2;
   const halfH = ESTIMATED_SEAT_BOX_HEIGHT_PX / 2;

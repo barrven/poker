@@ -187,17 +187,17 @@ button {
   }
 }
 
-/* Oval poker table (feature 016). Mobile-first: the base rules below are
-   a plain, always-non-overlapping two-column grid on felt — safe at any
-   width, phone included. From 640px up (comfortably past #app's own
-   36rem/576px cap, so the felt's rendered width is a known, stable
-   value once this breakpoint is active — not something that keeps
-   shrinking as the viewport narrows) a media query lays the same seat
-   markup out as an actual oval by absolute-positioning each
-   .seat-slot-N. Below 640px (including phone) stays the grid: fitting
-   six text-heavy seat boxes non-overlapping around a true ellipse needs
-   more width than a phone has, and AC3 explicitly allows the shape to
-   adapt there. */
+/* Oval poker table (feature 016; sizing updated by feature 019). Mobile-
+   first: the base rules below are a plain, always-non-overlapping
+   two-column grid on felt — safe at any width, phone included. From
+   640px up a media query lays the same seat markup out as an actual
+   oval by absolute-positioning each .seat-slot-N, with the felt itself
+   sized relative to the viewport (see .table-oval's `width` below) so
+   it fills most of the available width instead of being stuck at a
+   small fixed size. Below 640px (including phone) stays the grid:
+   fitting six text-heavy seat boxes non-overlapping around a true
+   ellipse needs more width than a phone has, and AC3 explicitly allows
+   the shape to adapt there. */
 
 .table-oval {
   margin: 1.25rem 0;

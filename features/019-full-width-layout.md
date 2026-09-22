@@ -1,7 +1,7 @@
 ---
 id: 019
 title: Full-width layout (remove the max-width column)
-status: testing
+status: validating
 priority: high
 iteration: 6
 ---
@@ -67,6 +67,38 @@ Single file touched: `src/style.css`.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
+
+New file `tests/full-width-layout.test.ts` (3 tests), static CSS checks:
+- `#app` has no `max-width` at all (commented-out or live), and the old
+  `36rem` value is gone from the stylesheet entirely (regression guard).
+- `.table-oval`'s desktop rule sizes with a viewport unit
+  (`min(NNvw, NNrem)`), not a bare `100%`/fixed value, its `vw` share is
+  under 100 (so it can never itself cause horizontal overflow), and its
+  rem cap is bigger than the old `33rem` (so it actually grows).
+- At 1280px and 1440px viewports, the formula renders the table at over
+  60% of the viewport width — matches AC2's "fills most of the available
+  width" at those two named sizes.
+
+Also fixed two now-stale existing tests in `tests/table-layout.test.ts`
+(feature 016's geometry checks) that read `.table-oval`'s old fixed
+`max-width: 33rem` to compute the felt's pixel size for its seat
+overlap/clearance checks — that property no longer exists post-019.
+Updated `readSeatGeometry` to instead compute the felt's *worst-case*
+(smallest) size at the oval breakpoint's own 640px floor, since seat
+boxes are fixed-px and a bigger felt only ever gives them more room; the
+checks and their invariants are otherwise unchanged. This is a
+test-formula update to track an intentional CSS change, not a
+weakened assertion — same pass/fail conditions, on the correct data.
+
+Deliberately not covered: real-browser horizontal-scroll measurement
+(the CSS-math check above stands in for it) and AC4 (existing
+functionality) — this is a CSS-only change with no markup/behavior
+touched, so the full pre-existing suite (164 tests, all still green) is
+the regression net for that, not new tests. Full suite run 4 times
+(167/167 every time) plus lint/typecheck clean. Visual confirmation
+(headless-Chrome screenshots at 1440/1280/375px against a live
+seated/in-hand game, `scrollWidth === clientWidth` at all three) was
+done during `/implement`; not re-run here since nothing changed since.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
