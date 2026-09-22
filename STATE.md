@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 6
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 019-full-width-layout
 - **Last updated:** 2026-09-22
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-22 — validated 019-full-width-layout (pass: lint/typecheck/build clean, 167/167 tests x5 fresh runs, live puppeteer-driven headless-Chrome walkthrough at 1440/1280/375px confirming no horizontal scroll on guest/dashboard/table views and the table filling ~89-92% of viewport width at 1280/1440; all 4 acceptance criteria checked); phase set to `accept`
 - 2026-09-22 — tested 019-full-width-layout (3 new tests in tests/full-width-layout.test.ts checking #app has no max-width and .table-oval's viewport-relative sizing/cap; fixed 2 now-stale table-layout.test.ts geometry-check tests that read the old fixed max-width; 167/167 total, 4 stable runs, lint/typecheck clean); phase set to `validate`
 - 2026-09-22 — implemented 019-full-width-layout (removed #app's max-width entirely, .table-oval now scales with viewport via `width: min(92vw, 80rem)` instead of a fixed 33rem cap; verified visually via headless-Chrome screenshots at 1440/1280/375px against a live seated/in-hand game, no horizontal scroll introduced); phase set to `test`
 - 2026-09-22 — scheduled iteration 6 slice (019-full-width-layout, 020-inhand-viewport-fit — decomposing spec requirements 29-32); active 019-full-width-layout; phase set to `implement`

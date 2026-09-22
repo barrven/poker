@@ -1,7 +1,7 @@
 ---
 id: 019
 title: Full-width layout (remove the max-width column)
-status: validating
+status: accept
 priority: high
 iteration: 6
 ---
@@ -102,6 +102,50 @@ done during `/implement`; not re-run here since nothing changed since.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+
+**Tooling:** lint (Biome) clean, typecheck clean, build clean, full test
+suite 167/167 across 5 fresh runs this stage (in addition to the 4 stable
+runs already done in `/test`).
+
+**AC1 — no page-wide max-width, gone not commented:** pass. `grep -n
+"max-width" src/style.css` returns only the two unrelated
+`@media (max-width: 480px)` phone breakpoints; `#app`'s rule is just
+`padding: 2rem 1.25rem;`, and `36rem` doesn't appear anywhere in the
+stylesheet. Confirmed live: the guest login view at 1440px renders edge to
+edge (screenshot), not capped to a centered ~576px column.
+
+**AC2 — table sized relative to viewport, fills most width at 1280/1440:**
+pass. `.table-oval`'s desktop rule is `width: min(92vw, 80rem)` (was
+`max-width: 33rem` fixed). Re-ran a fresh live check this stage (new test
+user, registered → sat → hand started, via a scratch puppeteer-core
+script driving real `/usr/bin/google-chrome`, since the Claude in Chrome
+extension isn't connected this session): screenshots at 1440x900 and
+1280x800 show the oval visibly filling most of the viewport width, matching
+`tests/full-width-layout.test.ts`'s formula check (>60% of viewport at
+both sizes; actual is ~92% at 1280px — `min(92vw, 80rem)` still under the
+80rem/1280px cap there — and ~89% at 1440px, where the cap now binds
+(`min(1324.8px, 1280px)` = 1280px) — both comfortably over the bar and a
+clear step up from the old fixed 528px table).
+
+**AC3 — no new horizontal scrolling anywhere:** pass. Re-verified live
+this stage with `document.documentElement.scrollWidth ===
+document.documentElement.clientWidth` at every combination checked: guest
+login view @1440px, logged-in-but-not-seated dashboard @1440/1280/375px,
+and the live in-hand table view @1440/1280/375px — no overflow (`ok`) in
+every case, no `OVERFLOW` result anywhere.
+
+**AC4 — all previously-shipped functionality remains usable/correctly
+wired:** pass. This was a CSS-only change (one file touched at
+`/implement`: `src/style.css`; `/test` additionally touched
+`tests/table-layout.test.ts` to fix its geometry-check math, not any
+shipped code). The full pre-existing regression suite (164 tests covering
+auth, tab, sit/leave, betting, showdown, AI, hand history, dashboard,
+login/register, card images, table layout, responsive layout) stayed
+green throughout, and this stage's live walkthrough (register → sit →
+hand start → real hole cards, opponent seats, pot, board all rendering
+correctly) exercised the real functional path end to end, not just CSS.
+
+**Overall: accept.**
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
