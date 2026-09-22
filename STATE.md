@@ -6,7 +6,7 @@ lifecycle. Every stage command reads it first and updates it last.
 - **Outer iteration:** 6
 - **Phase:** features
 - **Active feature:** _none — awaiting `/features`_
-- **Last updated:** 2026-09-20
+- **Last updated:** 2026-09-22
 
 ## Phases
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-22 — spec revised: second UI refinement pass requested after seeing iteration 5's shipped UI — no-scroll in-hand viewport, larger cards, player's own hole cards at the bottom near their seat, and removing the app's max-width column entirely. Added requirements 29-32; phase remains `features`
 - 2026-09-20 — retro (iteration 5): full UI-overhaul slice (015-018) shipped, closing spec requirements 20-28; no spec changes needed (the table-chrome Open Question now reads as answered but user chose not to edit the spec text); more to build; outer iteration bumped to 6; phase set to `features`
 - 2026-09-20 — accepted 018-dashboard-shell (slice complete → retro); active feature cleared; phase set to `retro`
 - 2026-09-20 — validated 018-dashboard-shell (pass: typecheck/lint/build clean, 164/164 tests x5 runs, live curl walkthrough of the full register/topup/sit/leave/logout cycle, real headless-Chrome screenshots at desktop+phone+narrow widths; all 7 acceptance criteria checked); phase set to `accept`. Last item in current slice — nothing else at `backlog` for iteration 5.

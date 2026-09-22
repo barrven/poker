@@ -109,6 +109,20 @@ Numbered, testable statements. These are what `/features` decomposes into a back
 28. The table view arranges seats around a table shape (oval/circular),
     with the five computer opponents positioned around it — not stacked
     in a column — so it resembles a real poker table.
+29. The in-hand table view (hole cards, board, pot, seats, action
+    controls) fits within the viewport with no scrolling required at
+    common desktop and phone screen sizes — a stronger bar than
+    requirement 19's "usable," specifically for the active-hand screen.
+30. Card images (hole cards and board) are sized larger and more
+    visually prominent than the initial implementation from
+    requirement 27.
+31. The player's own hole cards are displayed at the bottom of the
+    table view, near the player's own seat — not as a separate line
+    elsewhere on the page.
+32. The app has no fixed max-width column constraining the page — the
+    poker table fills most of the viewport's width, and other content
+    (forms, dashboard) uses available width appropriately instead of
+    being capped to a narrow centered column.
 
 ## Non-goals
 
@@ -192,3 +206,10 @@ _Appended by `/retro` — what changed about the spec itself and why._
   hole and community cards, and a table view with seats arranged around
   an oval/circular table instead of a column. Card image sourcing also
   added to Constraints.
+- 2026-09-22 — after seeing iteration 5's shipped UI, user asked for a
+  second refinement pass: the in-hand table view still scrolls on
+  common screen sizes, cards are too small, the player's own hole
+  cards should sit at the bottom of the table view near their own
+  seat, and the app's narrow centered max-width column (used
+  throughout, including under the table) should go away entirely so
+  layouts use the full viewport width. Added requirements 29-32.
