@@ -4,8 +4,8 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 6
-- **Phase:** features
-- **Active feature:** _none — awaiting `/features`_
+- **Phase:** implement
+- **Active feature:** 019-full-width-layout
 - **Last updated:** 2026-09-22
 
 ## Phases
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-22 — scheduled iteration 6 slice (019-full-width-layout, 020-inhand-viewport-fit — decomposing spec requirements 29-32); active 019-full-width-layout; phase set to `implement`
 - 2026-09-22 — spec revised: second UI refinement pass requested after seeing iteration 5's shipped UI — no-scroll in-hand viewport, larger cards, player's own hole cards at the bottom near their seat, and removing the app's max-width column entirely. Added requirements 29-32; phase remains `features`
 - 2026-09-20 — retro (iteration 5): full UI-overhaul slice (015-018) shipped, closing spec requirements 20-28; no spec changes needed (the table-chrome Open Question now reads as answered but user chose not to edit the spec text); more to build; outer iteration bumped to 6; phase set to `features`
 - 2026-09-20 — accepted 018-dashboard-shell (slice complete → retro); active feature cleared; phase set to `retro`

@@ -5,9 +5,17 @@
 > "active" feature (the one currently in flight) is always named in
 > `STATE.md`, not just here.
 
-## Iteration 5 (current slice)
+## Iteration 6 (current slice)
 
-_Empty — the full slice (015-018) is done. Next: `/retro`._
+| ID | Title | Status | Priority | Iteration | File |
+|----|-------|--------|----------|-----------|------|
+| 019 | Full-width layout (remove the max-width column) | backlog | high | 6 | [019-full-width-layout.md](019-full-width-layout.md) |
+| 020 | In-hand view fits the viewport, larger cards, hole cards at the bottom | backlog | high | 6 | [020-inhand-viewport-fit.md](020-inhand-viewport-fit.md) |
+
+<!-- 019 (drop the max-width column) is scheduled before 020 (in-hand
+no-scroll layout) because 020's fit math depends on how much width the
+table actually gets — building 020 against the old narrow column would
+mean redoing it once 019 lands anyway. -->
 
 ## Done (prior iterations)
 
