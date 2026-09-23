@@ -7,6 +7,15 @@
 What shipped, in user-facing terms.
 -->
 
+## 2026-09-23 — Full-width layout (features/019-full-width-layout.md)
+
+The app no longer squeezes every view into a narrow centered column.
+Guest forms, the dashboard, and the table now use the full available
+viewport width, and the poker table itself scales up to fill most of
+that width at common desktop sizes instead of staying capped at a
+small fixed size. Layout-only change — nothing about how the game
+works or looks otherwise changed.
+
 ## 2026-09-20 — Responsive app-shell dashboard (features/018-dashboard-shell.md)
 
 Once logged in, you now land on a proper dashboard instead of an ad hoc

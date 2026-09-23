@@ -1,7 +1,7 @@
 ---
 id: 019
 title: Full-width layout (remove the max-width column)
-status: accept
+status: done
 priority: high
 iteration: 6
 ---
@@ -149,3 +149,8 @@ correctly) exercised the real functional path end to end, not just CSS.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._
+
+2026-09-23 — Presented the validated summary (diff, all 4 ACs, test/visual
+results, and the note that the in-hand view now needs vertical scrolling
+at desktop sizes — expected, deferred to feature 020) via AskUserQuestion.
+User chose **Accept and continue**. Decision: accepted.

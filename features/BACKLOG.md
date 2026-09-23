@@ -9,7 +9,6 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 019 | Full-width layout (remove the max-width column) | accept | high | 6 | [019-full-width-layout.md](019-full-width-layout.md) |
 | 020 | In-hand view fits the viewport, larger cards, hole cards at the bottom | backlog | high | 6 | [020-inhand-viewport-fit.md](020-inhand-viewport-fit.md) |
 
 <!-- 019 (drop the max-width column) is scheduled before 020 (in-hand
@@ -39,6 +38,7 @@ mean redoing it once 019 lands anyway. -->
 | 016 | Poker table layout (oval seating) | done | high | 5 | [016-table-layout.md](016-table-layout.md) |
 | 017 | Standard login/register flow | done | medium | 5 | [017-login-register-flow.md](017-login-register-flow.md) |
 | 018 | Responsive app-shell dashboard | done | medium | 5 | [018-dashboard-shell.md](018-dashboard-shell.md) |
+| 019 | Full-width layout (remove the max-width column) | done | high | 6 | [019-full-width-layout.md](019-full-width-layout.md) |
 
 <!--
 Status values: backlog | implementing | testing | validating | accept | done | blocked | deferred
