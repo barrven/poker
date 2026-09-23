@@ -1,7 +1,7 @@
 ---
 id: 020
 title: In-hand view fits the viewport, larger cards, hole cards at the bottom
-status: validating
+status: accept
 priority: high
 iteration: 6
 ---
@@ -77,7 +77,7 @@ how much they mattered:
    toggle hidden outright while a hand is active (`view.hand` truthy) —
    it isn't part of AC1's or AC4's required in-hand content.
 2. Made `.table-oval`'s width formula (feature 019: `min(92vw, 80rem)`)
-   viewport-*height*-relative too: `min(92vw, 80rem, 48vh)`. The third
+   viewport-*height*-relative too: `min(92vw, 80rem, 56vh)`. The third
    term expresses a height budget as an equivalent width via the fixed
    3:2 aspect-ratio (height = width·⅔, so capping height at Hvh means
    capping width at 1.5H vh).
@@ -120,9 +120,14 @@ feature's oval-scoped clamps).
 
 **Known rough edge:** at the exact 1280x800 target with a full 5-card
 board showing, the board row sits close enough to the hero seat box
-below it that the dealer-button badge can be partly behind the board
-cards' edge in some hands. Cosmetic only (nothing is unreadable or
-non-functional); flagged for `/validate` rather than chased further
+below it that they visually touch (the dealer-button badge can be
+partly behind the board cards' edge) in some hands. Bumped the felt's
+vh budget from an earlier, tighter 48vh to 56vh specifically to fix a
+worse version of this where the "Pot:" text itself could end up
+genuinely obscured — confirmed by a real live check that's no longer
+the case. What remains is touching/tight, not obscuring: pot, board,
+and hero cards are all independently legible in every live check this
+stage. Cosmetic only; flagged for `/validate` rather than chased further
 given the layout otherwise fits and reads correctly.
 
 ## Test Notes
@@ -175,6 +180,79 @@ stable; lint/typecheck/build all clean.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
+
+**Tooling:** lint (Biome) clean, typecheck clean, build clean, full test
+suite 175/175 across 5 fresh runs this stage.
+
+**Fix applied during this stage:** skeptical re-verification with a full
+5-card board at 1280x800 found the board row could sit close enough to
+`[data-pot]`'s text to genuinely obscure it in some hands (not just the
+cosmetic seat-box touching already flagged in Implementation Notes) —
+the felt's height budget (`.table-oval`'s third `min()` term) was tuned
+too tight. Bumped it from `48vh` to `56vh` (62px of unused page headroom
+was available at 1280x800 to spend on this). Re-verified live: pot text
+fully clear in every subsequent check (25+ live runs across both
+desktop sizes, preflop through river, no-scroll fit still holds at all
+three target viewports every time). The remaining board/hero-box
+touching is cosmetic only (both remain independently legible) and is
+the rough edge still flagged below.
+
+**AC1 — in-hand view fits the viewport with no scrolling at
+1280x800/1440x900/375x812:** pass. Re-ran the live headless-Chrome check
+(scratch puppeteer-core script driving real `/usr/bin/google-chrome`,
+extension not connected this session) fresh this stage: 5 runs of the
+basic preflop check, 5 runs advancing a hand to a full 5-card river
+board, 5 runs with the detailed mobile element-by-element breakdown —
+all 15 report `document.documentElement.scrollHeight ===
+clientHeight` (zero overflow) at every target size, every run.
+Settlement/showdown (out of this AC's "while a hand is in progress"
+scope per Implementation Notes) spot-checked separately: scrollable,
+not broken.
+
+**AC2 — card images visibly larger than 2.6rem, targeting 5rem:** pass
+(against the floor; short of the 5rem ceiling at the tightest sizes —
+documented, deliberate tradeoff). Measured live via
+`getBoundingClientRect()`: hero cards render at 3.5rem (1280x800) and
+3.94rem (1440x900) — both well above the 2.6rem floor `tests/inhand-
+viewport-fit.test.ts` checks. Board cards use the same shape of clamp
+and clear the same floor (checked by the same test, both target
+sizes). Neither hits the full 5rem at these two specific viewports —
+see the AC1/AC2 tradeoff writeup in Implementation Notes for why, and
+that this is a recorded assumption for `/accept` to weigh in on, not an
+oversight.
+
+**AC3 — hero's hole cards render at the bottom of the table view, at/
+near the human's seat, not a separate line elsewhere:** pass. Confirmed
+by inspection (`renderHand`'s human-seat branch renders `.hero-cards`
+inline; `data-hole-cards`/"Your cards:" is gone from the source
+entirely — not just moved) and visually in every screenshot this
+stage: the human's two hole cards sit inside their own seat box, at the
+felt's bottom-center on desktop and the first grid cell on mobile.
+
+**AC4 — action controls (fold/check/call/bet/raise/all-in, raise
+input) stay fully visible and usable within the no-scroll viewport:**
+pass. Visible with room to spare in every screenshot (both a 4-button
+preflop decision and a 4-button + bet-input postflop decision), at all
+three target sizes; `[data-actions]` has no `display:none`/
+`visibility:hidden`/`overflow:hidden` in the stylesheet (checked by
+test). Functionally exercised live (the advance-to-river script fires
+real check/call actions through these exact controls every run).
+
+**AC5 — all other existing hand-view functionality remains correct and
+present:** pass. Opponent hidden/revealed cards, turn indicator,
+acting-seat highlight, dealer/blind marker badges, chip icons, and the
+settlement/showdown display are all unchanged in markup and confirmed
+present in screenshots (folded/all-in status, D/SB/BB badges, chip
+icons all visible in the desktop and mobile captures this stage). The
+full pre-existing regression suite (169 tests predating this feature,
+4 of which needed updating for the new markup/width-formula — see Test
+Notes — not weakened, just retargeted) stayed green throughout.
+
+**Overall: accept**, with two items worth surfacing to the user at
+`/accept`: (1) hero/board cards don't always hit the full 5rem target
+at the tightest common desktop size, by deliberate tradeoff against the
+no-scroll requirement; (2) a cosmetic board/hero-box touching edge at
+1280x800 with a full board, not affecting legibility or function.
 
 ## Acceptance Log
 _Filled in during `/accept` — what the user said, and the decision (accepted / changes requested / rejected)._

@@ -373,7 +373,7 @@ button {
        width * 2/3, so capping height at Hvh means capping width at
        H*1.5vh). Tuned against real headless-Chrome renders, not
        calculated blind — see this feature's Implementation Notes. */
-    width: min(92vw, 80rem, 48vh);
+    width: min(92vw, 80rem, 56vh);
     /* A real poker table is wide, not tall — 3:2 (matching a felt
        table's actual proportions), not the narrow portrait shape an
        earlier version of this rule mistakenly used. */

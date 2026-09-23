@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 6
-- **Phase:** validate
+- **Phase:** accept
 - **Active feature:** 020-inhand-viewport-fit
 - **Last updated:** 2026-09-23
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-23 — validated 020-inhand-viewport-fit (pass: lint/typecheck/build clean, 175/175 tests x5 runs; found+fixed a real pot-text-obscured edge case during skeptical re-check by widening the felt's height budget 48vh->56vh, 62px of spare headroom was available; re-verified live 25+ times across all 3 target sizes/preflop-to-river with zero overflow; all 5 acceptance criteria checked; 2 items flagged for `/accept`: cards don't always hit the full 5rem ceiling at the tightest size, and a cosmetic board/hero-box touching edge remains); phase set to `accept`
 - 2026-09-23 — tested 020-inhand-viewport-fit (6 new tests in tests/inhand-viewport-fit.test.ts covering AC2/AC3 and AC1's structural levers; real no-scroll fit verified live via headless Chrome across 11+ runs at all 3 target sizes, preflop through a full river board, zero overflow; 175/175 total, 4 stable runs, lint/typecheck/build clean); phase set to `validate`
 - 2026-09-23 — implemented 020-inhand-viewport-fit (hero's hole cards moved inline into their own seat box; table felt, seat boxes, hero/board card sizes all now scale with viewport height via clamp()/min() so the in-hand view fits without scrolling at 1280x800/1440x900/375x812; hand-history toggle hidden mid-hand; username truncated to guard the fit; iterated against real headless-Chrome renders; fixed 4 pre-existing tests broken by the width-formula/markup changes so the suite stays green — new AC-specific tests are `/test`'s job next); phase set to `test`
 - 2026-09-23 — accepted 019-full-width-layout (accept and continue); active 020-inhand-viewport-fit (last item in current slice); phase set to `implement`
