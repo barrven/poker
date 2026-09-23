@@ -4,7 +4,7 @@ This file is the single source of truth for where the project is in the
 lifecycle. Every stage command reads it first and updates it last.
 
 - **Outer iteration:** 6
-- **Phase:** test
+- **Phase:** validate
 - **Active feature:** 020-inhand-viewport-fit
 - **Last updated:** 2026-09-23
 
@@ -24,6 +24,7 @@ Valid values for **Phase**: `spec`, `features`, `implement`, `test`, `validate`,
 ## History
 
 <!-- Append a one-line entry here every time the phase changes, oldest last is fine, newest-first preferred. -->
+- 2026-09-23 — tested 020-inhand-viewport-fit (6 new tests in tests/inhand-viewport-fit.test.ts covering AC2/AC3 and AC1's structural levers; real no-scroll fit verified live via headless Chrome across 11+ runs at all 3 target sizes, preflop through a full river board, zero overflow; 175/175 total, 4 stable runs, lint/typecheck/build clean); phase set to `validate`
 - 2026-09-23 — implemented 020-inhand-viewport-fit (hero's hole cards moved inline into their own seat box; table felt, seat boxes, hero/board card sizes all now scale with viewport height via clamp()/min() so the in-hand view fits without scrolling at 1280x800/1440x900/375x812; hand-history toggle hidden mid-hand; username truncated to guard the fit; iterated against real headless-Chrome renders; fixed 4 pre-existing tests broken by the width-formula/markup changes so the suite stays green — new AC-specific tests are `/test`'s job next); phase set to `test`
 - 2026-09-23 — accepted 019-full-width-layout (accept and continue); active 020-inhand-viewport-fit (last item in current slice); phase set to `implement`
 - 2026-09-22 — validated 019-full-width-layout (pass: lint/typecheck/build clean, 167/167 tests x5 fresh runs, live puppeteer-driven headless-Chrome walkthrough at 1440/1280/375px confirming no horizontal scroll on guest/dashboard/table views and the table filling ~89-92% of viewport width at 1280/1440; all 4 acceptance criteria checked); phase set to `accept`

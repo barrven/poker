@@ -1,7 +1,7 @@
 ---
 id: 020
 title: In-hand view fits the viewport, larger cards, hole cards at the bottom
-status: testing
+status: validating
 priority: high
 iteration: 6
 ---
@@ -127,6 +127,51 @@ given the layout otherwise fits and reads correctly.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._
+
+New file `tests/inhand-viewport-fit.test.ts` (6 tests), static
+markup/CSS checks tied to this feature's ACs:
+- **AC3** — `data-hole-cards`/"Your cards:" are gone outright (not just
+  relocated), and the replacement renders inside the human seat's own
+  branch of the per-seat map, keyed off real `hand.holeCards` data.
+- **AC2** — evaluates the hero-card and board-card `clamp()` formulas at
+  both 1280x800 and 1440x900 (the two named desktop sizes) and asserts
+  each clears the old 2.6rem floor. Doesn't assert the full 5rem bar
+  everywhere — see the AC1/AC2 tradeoff recorded in Implementation
+  Notes; `/validate` checks the 5rem bar itself against the actual
+  numbers.
+- **AC1 support** — the hand-history toggle's hide-while-`view.hand`
+  condition, `[data-actions]` never being `display:none`/`hidden`/
+  `overflow:hidden`, the action-log's internal-scroll cap, and the
+  username truncation are each asserted directly (they're the
+  structural levers AC1's fit depends on, not the fit measurement
+  itself).
+- **AC4** — covered by fixing (not weakening) the 4 pre-existing tests
+  the implementation's markup/CSS changes broke, in
+  `tests/{card-images,deal,table-layout,full-width-layout}.test.ts`:
+  updated to match the new `hero-cards` markup and the width formula's
+  extra `vh` term, same invariants otherwise. `table-layout.test.ts`'s
+  geometry checks were reworked from a single width-only "worst case"
+  (no longer meaningful once box/felt size depend on viewport height
+  too) to real geometry evaluated at each of the two named target
+  viewports, now also covering the human's own (differently-sized)
+  seat box in the overlap check — a strictly more thorough version of
+  the same non-overlap guarantee, not a weaker one.
+
+**Deliberately not covered by static tests:** the actual no-scroll fit
+(AC1's core claim) and the visual absence of overlap — CSS math alone
+can't verify real rendered text-wrap height. Verified instead with real
+headless-Chrome (via scratch puppeteer-core scripts, extension not
+connected this session): `document.documentElement.scrollHeight ===
+clientHeight` at 1280x800/1440x900/375x812, checked repeatedly (11+
+runs total) across preflop, a full 5-card board at river, and randomized
+usernames/bet amounts, all stable with zero overflow. Also screenshotted
+each state and inspected for overlap by eye. Settlement/showdown
+(explicitly out of AC1's "while a hand is in progress" scope per
+Implementation Notes) was spot-checked to confirm it's merely
+scrollable, not visually broken.
+
+Full suite (175/175, the 6 new plus everything else) run 4 times, all
+stable; lint/typecheck/build all clean.
 
 ## Validation Notes
 _Filled in during `/validate` — lint/typecheck/build/test results, and a check against each acceptance criterion above._
