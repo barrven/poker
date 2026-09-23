@@ -1,7 +1,7 @@
 ---
 id: 020
 title: In-hand view fits the viewport, larger cards, hole cards at the bottom
-status: backlog
+status: testing
 priority: high
 iteration: 6
 ---
@@ -51,6 +51,79 @@ _Testable, checkable statements. `/validate` and `/accept` check against these d
 
 ## Implementation Notes
 _Filled in during `/implement` — approach taken, files touched, tradeoffs._
+
+Files touched: `src/main.ts`, `src/style.css` (plus test files — see Test
+Notes).
+
+**Hero cards (AC3):** `renderHand`'s per-seat map now renders the human's
+`hand.holeCards` inline inside their own `<li>` (wrapped `<span
+class="hero-cards">`), replacing the old standalone `<p data-hole-cards>`
+line above the oval entirely. The human seat already sits at the bottom
+of the oval on desktop (feature 016's seat-slot-1) and first in the grid
+on mobile, so this reads as "at the bottom of the table view, near the
+human's seat" on both layouts without needing separate positioning logic.
+
+**No-scroll fit (AC1) — approach:** iterated against real
+headless-Chrome renders (via a scratch puppeteer-core script driving
+`/usr/bin/google-chrome`; the Claude in Chrome extension wasn't
+connected this session), not calculated blind. Three levers, in order of
+how much they mattered:
+1. Cut fixed chrome around the table: `[data-hand] > p` and
+   `[data-action-log] p` margin resets (grid doesn't collapse child
+   margins, so default `<p>` margins were silently stacking on top of
+   the grid's own `gap`), smaller paddings/margins throughout, the
+   recent-actions log capped to a few lines with internal
+   `overflow-y: auto` instead of growing the page, and the hand-history
+   toggle hidden outright while a hand is active (`view.hand` truthy) —
+   it isn't part of AC1's or AC4's required in-hand content.
+2. Made `.table-oval`'s width formula (feature 019: `min(92vw, 80rem)`)
+   viewport-*height*-relative too: `min(92vw, 80rem, 48vh)`. The third
+   term expresses a height budget as an equivalent width via the fixed
+   3:2 aspect-ratio (height = width·⅔, so capping height at Hvh means
+   capping width at 1.5H vh).
+3. Once the felt could be genuinely small at short-but-wide viewports
+   (e.g. 384px wide at 1280x800, well under feature 016/019's old fixed
+   9rem seat-box width), the fixed-size seat boxes started overflowing
+   the shrunken felt. Scaled seat box `width`/`font-size`/`padding`, the
+   opponent card-back size, the hero card size, and the board card size
+   all to matching `clamp(min, Nvh, max)` values tied to the same
+   viewport-height budget, so boxes and felt shrink together instead of
+   the felt shrinking out from under fixed-size boxes. Every clamp's
+   `max` is unchanged from its pre-020 fixed value, so a tall-enough
+   viewport still renders exactly as feature 016/019 did.
+4. A long username could wrap the topbar to 2-3 lines at phone width,
+   eating unpredictable amounts of the same budget — `[data-profile]`
+   now truncates to one line with ellipsis, a small robustness fix this
+   feature's fit now actually depends on.
+
+**AC2 vs. AC1 tradeoff (assumption, flagged for `/validate`/`/accept`):**
+hero and board cards can't always hit the full 5rem the spec commit
+moved toward *and* fit the no-scroll budget at 1280x800 — a 5rem-wide
+hero card forces a seat box tall enough that either the felt needs to
+be ~400px tall (blowing the height budget) or the box overlaps its
+neighbors. Resolved with `clamp(min, Nvh, 5rem)`: reaches the full 5rem
+whenever there's enough vertical room (tall viewports, or the felt not
+being vh-bound at all) but backs off at the tightest common target
+(1280x800) to keep the layout non-overlapping. Verified this still
+clears AC2's actual floor (>2.6rem, "visibly larger") at both 1280x800
+and 1440x900 — see `tests/inhand-viewport-fit.test.ts`. Board cards get
+the same treatment for the same reason (up to 5 of them share the
+felt's center gutter).
+
+**AC1 scope assumption:** the settlement/showdown display (after a hand
+ends) is *not* held to the no-scroll bar — the Description scopes AC1 to
+"while a hand is in progress," and settlement's own revealed-hands list
+can run to 6 entries, which no reasonable card size fits in one
+viewport. Confirmed by inspection this state isn't visually broken, just
+scrollable (existing default `.card-img` sizing, unaffected by this
+feature's oval-scoped clamps).
+
+**Known rough edge:** at the exact 1280x800 target with a full 5-card
+board showing, the board row sits close enough to the hero seat box
+below it that the dealer-button badge can be partly behind the board
+cards' edge in some hands. Cosmetic only (nothing is unreadable or
+non-functional); flagged for `/validate` rather than chased further
+given the layout otherwise fits and reads correctly.
 
 ## Test Notes
 _Filled in during `/test` — what's covered, what's deliberately not._

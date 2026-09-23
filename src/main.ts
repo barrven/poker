@@ -321,10 +321,13 @@ function render(): void {
         : `${renderDealControl()}${renderTable(view.stack)}`
       : renderDashboard(view.tab, view.history);
     // Hand history is shown outright on the dashboard above (not
-    // seated); while seated it's still available, but behind the same
-    // toggle as before this feature — the table/hand view already has
-    // plenty on screen without it.
-    const seatedHistorySection = view.seated
+    // seated); while seated but not mid-hand it's still available behind
+    // the same toggle as before this feature. While a hand is actually in
+    // progress (or just settled) it's hidden outright — feature 020's
+    // no-scroll in-hand view doesn't have room to spare for it, and it
+    // isn't part of the in-hand view's own required content (AC1/AC4
+    // don't list it).
+    const seatedHistorySection = view.seated && !view.hand
       ? `${renderHistoryToggle(view.historyOpen)}${view.historyOpen ? renderHistory(view.history) : ""}`
       : "";
     app.innerHTML = `
@@ -540,13 +543,15 @@ function renderHand(hand: HandView, tab: number): string {
       const status = seat.folded ? " — folded" : seat.allIn ? " — all-in" : "";
       const seatKey = seat.kind === "human" ? "you" : `cpu-${seat.index}`;
       const acting = seat.index === hand.actingSeat && !hand.result ? " data-acting" : "";
-      // The human's own hole cards render separately (data-hole-cards,
-      // below); a computer seat shows its hole cards face-down until it's
-      // revealed at showdown (result.revealed), never before.
+      // The human's own hole cards render inline in their own seat box
+      // (feature 020 — bottom of the table view, at the human's seat
+      // position, not a separate line elsewhere); a computer seat shows
+      // its hole cards face-down until it's revealed at showdown
+      // (result.revealed), never before.
       const revealedEntry = hand.result?.revealed?.find((r) => r.seat === seat.index);
       const seatCards =
         seat.kind === "human"
-          ? ""
+          ? ` <span class="hero-cards">${renderCards(hand.holeCards)}</span>`
           : ` ${revealedEntry ? renderCards(revealedEntry.cards) : renderHiddenCards(2)}`;
       // Seat 0 (human) always sits at the bottom of the oval, seats 1-5
       // fill the remaining slots going around — array position already
@@ -575,7 +580,6 @@ function renderHand(hand: HandView, tab: number): string {
     <div data-hand>
       <p data-street>Street: ${escapeHtml(hand.street)}</p>
       <p data-turn>${turnText}</p>
-      <p data-hole-cards>Your cards: ${renderCards(hand.holeCards)}</p>
       ${renderTableOval(`<ul data-seats>${seatsHtml}</ul>`, centerHtml)}
       ${actionArea}
       ${renderActionLog(hand.actionLog)}

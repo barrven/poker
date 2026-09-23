@@ -109,31 +109,59 @@ function readOvalMediaBlock(css: string): string {
   return block as string;
 }
 
-function readSeatGeometry(mediaBlock: string): {
+function readClamp(
+  block: string,
+  property: string,
+): { min: number; vh: number; max: number } | undefined {
+  const m = block.match(
+    new RegExp(`${property}:\\s*clamp\\(\\s*(\\d+(?:\\.\\d+)?)rem\\s*,\\s*(\\d+(?:\\.\\d+)?)vh\\s*,\\s*(\\d+(?:\\.\\d+)?)rem\\s*\\)`),
+  );
+  if (!m) return undefined;
+  return { min: Number(m[1]), vh: Number(m[2]), max: Number(m[3]) };
+}
+
+function evalClampPx(clamp: { min: number; vh: number; max: number }, viewportHeightPx: number, rem: number): number {
+  const preferredPx = (clamp.vh / 100) * viewportHeightPx;
+  return Math.min(Math.max(preferredPx, clamp.min * rem), clamp.max * rem);
+}
+
+// Box/felt sizing is now viewport-*height*-relative too (feature 020's
+// no-scroll in-hand fit), not just viewport-width-relative (feature
+// 019) — so unlike the original version of this helper, there's no
+// single width-only "worst case" any more. This computes real geometry
+// at a specific (viewportWidthPx, viewportHeightPx) pair instead, so
+// callers check it at the actual named target sizes from features
+// 019/020's acceptance criteria (1280x800, 1440x900).
+function readSeatGeometry(
+  mediaBlock: string,
+  viewportWidthPx: number,
+  viewportHeightPx: number,
+): {
   areaWidthPx: number;
   areaHeightPx: number;
   boxWidthPx: number;
-  slots: { slot: number; leftPercent: number; topPercent: number }[];
+  boxHeightPx: number;
+  heroBoxWidthPx: number;
+  heroBoxHeightPx: number;
+  slots: { slot: number; leftPercent: number; topPercent: number; isHero: boolean }[];
 } {
   const REM = 16;
 
-  const [vwPercent, capRem] = (
-    mediaBlock.match(/\.table-oval\s*\{[^}]*width:\s*min\(\s*(\d+(?:\.\d+)?)vw\s*,\s*(\d+(?:\.\d+)?)rem\s*\)/) ?? []
+  const [vwPercent, capRem, vhPercent] = (
+    mediaBlock.match(
+      /\.table-oval\s*\{[^}]*width:\s*min\(\s*(\d+(?:\.\d+)?)vw\s*,\s*(\d+(?:\.\d+)?)rem\s*,\s*(\d+(?:\.\d+)?)vh\s*\)/,
+    ) ?? []
   )
     .slice(1)
     .map(Number);
   const [aspectW, aspectH] = (mediaBlock.match(/aspect-ratio:\s*(\d+)\s*\/\s*(\d+)/) ?? [])
     .slice(1)
     .map(Number);
-  assert.ok(vwPercent > 0 && capRem > 0 && aspectW > 0 && aspectH > 0, "could not read .table-oval sizing");
-  // .table-oval's width is viewport-relative (feature 019: `min(92vw,
-  // 80rem)`), not a fixed rem — so unlike before, there's no single
-  // "known width" once the breakpoint is active. Seat boxes are a fixed
-  // px size, so a bigger felt only ever gives them more room; the
-  // worst case (smallest felt, tightest clearance) is right at the
-  // breakpoint's own min-width, so that's what's checked here.
-  const BREAKPOINT_MIN_PX = 640;
-  const feltWidthPx = Math.min((vwPercent / 100) * BREAKPOINT_MIN_PX, capRem * REM);
+  assert.ok(
+    vwPercent > 0 && capRem > 0 && vhPercent > 0 && aspectW > 0 && aspectH > 0,
+    "could not read .table-oval sizing",
+  );
+  const feltWidthPx = Math.min((vwPercent / 100) * viewportWidthPx, capRem * REM, (vhPercent / 100) * viewportHeightPx);
   const feltHeightPx = (feltWidthPx * aspectH) / aspectW;
 
   // [data-seats] fills .table-oval exactly (inset: 0) — seat-slot-N
@@ -148,8 +176,39 @@ function readSeatGeometry(mediaBlock: string): {
 
   const seatLiBlock = mediaBlock.match(/\[data-seats\] li \{([^}]*)\}/)?.[1];
   assert.ok(seatLiBlock, "[data-seats] li rule not found in the oval media query");
-  const boxWidthRem = Number(seatLiBlock?.match(/width:\s*(\d+(?:\.\d+)?)rem/)?.[1]);
-  assert.ok(boxWidthRem > 0, "could not read seat box width");
+  const boxWidthClamp = readClamp(seatLiBlock as string, "width");
+  const fontSizeClamp = readClamp(seatLiBlock as string, "font-size");
+  assert.ok(boxWidthClamp && fontSizeClamp, "could not read seat box width/font-size clamp()");
+  const boxWidthPx = evalClampPx(boxWidthClamp as NonNullable<typeof boxWidthClamp>, viewportHeightPx, REM);
+  const fontSizePx = evalClampPx(fontSizeClamp as NonNullable<typeof fontSizeClamp>, viewportHeightPx, REM);
+  // A computer seat's box holds a lot: label, D/SB/BB badges, a
+  // chip-prefixed stack, fold/all-in status, a chip-prefixed bet, and —
+  // while its cards are unrevealed — two small card-back images. That
+  // wraps to roughly 2-3 lines of text plus one compact image row at
+  // the box's own font-size; 130px was a generous estimate of that at
+  // the original fixed 0.8rem (12.8px) font-size (real headless-Chrome
+  // renders this feature confirmed it as non-overlapping — see this
+  // feature's Implementation/Validation Notes), scaled here by how much
+  // smaller the clamped font actually renders at this viewport height.
+  const boxHeightPx = 130 * (fontSizePx / (0.8 * REM));
+
+  // The human's own seat (feature 020) isn't the shared clamp — it's
+  // width: auto around two hero-card images sized by their own clamp,
+  // capped at max-width. Estimate its box the same way: card width (and
+  // aspect-ratio-derived height) drives both dimensions.
+  const heroLiBlock = mediaBlock.match(/\[data-seats\] li\[data-seat="you"\]\s*\{([^}]*)\}/)?.[1];
+  const heroCardBlock = mediaBlock.match(/\[data-seats\] li\[data-seat="you"\] \.card-img\s*\{([^}]*)\}/)?.[1];
+  assert.ok(heroLiBlock && heroCardBlock, "could not find the human seat's own width/card-size rules");
+  const heroMaxWidthRem = Number(heroLiBlock?.match(/max-width:\s*(\d+(?:\.\d+)?)rem/)?.[1]);
+  const heroCardClamp = readClamp(heroCardBlock as string, "width");
+  assert.ok(heroMaxWidthRem > 0 && heroCardClamp, "could not read the human seat's sizing");
+  const heroCardWidthPx = evalClampPx(heroCardClamp as NonNullable<typeof heroCardClamp>, viewportHeightPx, REM);
+  const CARD_GAP_PX = 0.25 * REM;
+  const LI_PADDING_PX = 2 * (0.25 * REM); // [data-seats] li's own padding, both sides
+  const heroBoxWidthPx = Math.min(heroCardWidthPx * 2 + CARD_GAP_PX + LI_PADDING_PX, heroMaxWidthRem * REM);
+  const heroCardHeightPx = (heroCardWidthPx * 7) / 5; // aspect-ratio: 5 / 7
+  // Text line(s) above the cards, plus the card row itself.
+  const heroBoxHeightPx = fontSizePx * 2.6 + heroCardHeightPx;
 
   const slots = [];
   for (let slot = 1; slot <= 6; slot++) {
@@ -158,74 +217,77 @@ function readSeatGeometry(mediaBlock: string): {
     const leftPercent = Number(slotBlock?.match(/left:\s*(\d+(?:\.\d+)?)%/)?.[1]);
     const topPercent = Number(slotBlock?.match(/top:\s*(\d+(?:\.\d+)?)%/)?.[1]);
     assert.ok(!Number.isNaN(leftPercent) && !Number.isNaN(topPercent), `.seat-slot-${slot} missing left%/top%`);
-    slots.push({ slot, leftPercent, topPercent });
+    slots.push({ slot, leftPercent, topPercent, isHero: slot === 1 });
   }
 
-  return { areaWidthPx, areaHeightPx, boxWidthPx: boxWidthRem * REM, slots };
+  return { areaWidthPx, areaHeightPx, boxWidthPx, boxHeightPx, heroBoxWidthPx, heroBoxHeightPx, slots };
 }
 
-// A computer seat's box holds a lot: label, D/SB/BB badges, a
-// chip-prefixed stack, fold/all-in status, a chip-prefixed bet, and —
-// while its cards are unrevealed — two small card-back images (shrunk
-// specifically inside a seat box, see [data-seats] .card-img). The box
-// is also wider here (9rem) than the standalone hole-cards row, so this
-// wraps to roughly 2-3 lines of text plus one compact image row. This
-// is a deliberate, generous estimate of that real height at the oval
-// breakpoint's smaller font-size, not an arbitrary number — but it's
-// still an estimate: no browser was available this run to measure
-// actual rendered text height (see this feature's Validation Notes).
-const ESTIMATED_SEAT_BOX_HEIGHT_PX = 130;
+// The two named desktop sizes from features 019/020's own acceptance
+// criteria — the actual scenarios that matter, now that sizing depends
+// on viewport height as well as width.
+const TARGET_VIEWPORTS: [number, number][] = [
+  [1280, 800],
+  [1440, 900],
+];
 
-test("geometry check: every seat-slot's box stays fully inside the felt's safe interior at the oval breakpoint's smallest (worst-case) width", () => {
-  const { areaWidthPx, areaHeightPx, boxWidthPx, slots } = readSeatGeometry(readOvalMediaBlock(readCss()));
-  const halfW = boxWidthPx / 2;
-  const halfH = ESTIMATED_SEAT_BOX_HEIGHT_PX / 2;
-  const MIN_CLEARANCE_PX = 8; // a little slack for border/box-shadow bleed
+for (const [viewportWidthPx, viewportHeightPx] of TARGET_VIEWPORTS) {
+  test(`geometry check: every seat-slot's box stays fully inside the felt's safe interior at ${viewportWidthPx}x${viewportHeightPx}`, () => {
+    const { areaWidthPx, areaHeightPx, boxWidthPx, boxHeightPx, heroBoxWidthPx, heroBoxHeightPx, slots } =
+      readSeatGeometry(readOvalMediaBlock(readCss()), viewportWidthPx, viewportHeightPx);
+    const MIN_CLEARANCE_PX = 8; // a little slack for border/box-shadow bleed
 
-  for (const { slot, leftPercent, topPercent } of slots) {
-    const x = (leftPercent / 100) * areaWidthPx;
-    const y = (topPercent / 100) * areaHeightPx;
-    assert.ok(
-      x - halfW >= -MIN_CLEARANCE_PX && x + halfW <= areaWidthPx + MIN_CLEARANCE_PX,
-      `seat-slot-${slot} box would clip the felt's left/right edge (center x=${x}px, area width ${areaWidthPx}px)`,
-    );
-    assert.ok(
-      y - halfH >= -MIN_CLEARANCE_PX && y + halfH <= areaHeightPx + MIN_CLEARANCE_PX,
-      `seat-slot-${slot} box would clip the felt's top/bottom edge (center y=${y}px, area height ${areaHeightPx}px)`,
-    );
-  }
-});
-
-test("geometry check: every pair of seat boxes clears each other on at least one axis, so none can overlap", () => {
-  const { areaWidthPx, areaHeightPx, boxWidthPx, slots } = readSeatGeometry(readOvalMediaBlock(readCss()));
-  const boxW = boxWidthPx;
-  const boxH = ESTIMATED_SEAT_BOX_HEIGHT_PX;
-
-  const points = slots.map(({ slot, leftPercent, topPercent }) => ({
-    slot,
-    x: (leftPercent / 100) * areaWidthPx,
-    y: (topPercent / 100) * areaHeightPx,
-  }));
-
-  for (let i = 0; i < points.length; i++) {
-    for (let j = i + 1; j < points.length; j++) {
-      const a = points[i];
-      const b = points[j];
-      const dx = Math.abs(a.x - b.x);
-      const dy = Math.abs(a.y - b.y);
-      // Axis-aligned bounding-box overlap test: two boxes collide only if
-      // they overlap on BOTH axes at once. Seats sharing a row (small dy)
-      // are fine as long as they're spread far enough apart horizontally
-      // (large dx), and vice versa for seats sharing a column.
-      const xClear = dx >= boxW;
-      const yClear = dy >= boxH;
+    for (const { slot, leftPercent, topPercent, isHero } of slots) {
+      const x = (leftPercent / 100) * areaWidthPx;
+      const y = (topPercent / 100) * areaHeightPx;
+      const halfW = (isHero ? heroBoxWidthPx : boxWidthPx) / 2;
+      const halfH = (isHero ? heroBoxHeightPx : boxHeightPx) / 2;
       assert.ok(
-        xClear || yClear,
-        `seat-slot-${a.slot} and seat-slot-${b.slot} boxes would overlap (dx=${dx}px, dy=${dy}px, box ${boxW}x${boxH}px)`,
+        x - halfW >= -MIN_CLEARANCE_PX && x + halfW <= areaWidthPx + MIN_CLEARANCE_PX,
+        `seat-slot-${slot} box would clip the felt's left/right edge (center x=${x}px, area width ${areaWidthPx}px)`,
+      );
+      assert.ok(
+        y - halfH >= -MIN_CLEARANCE_PX && y + halfH <= areaHeightPx + MIN_CLEARANCE_PX,
+        `seat-slot-${slot} box would clip the felt's top/bottom edge (center y=${y}px, area height ${areaHeightPx}px)`,
       );
     }
-  }
-});
+  });
+
+  test(`geometry check: every pair of seat boxes clears each other on at least one axis at ${viewportWidthPx}x${viewportHeightPx}`, () => {
+    const { areaWidthPx, areaHeightPx, boxWidthPx, boxHeightPx, heroBoxWidthPx, heroBoxHeightPx, slots } =
+      readSeatGeometry(readOvalMediaBlock(readCss()), viewportWidthPx, viewportHeightPx);
+
+    const points = slots.map(({ slot, leftPercent, topPercent, isHero }) => ({
+      slot,
+      isHero,
+      x: (leftPercent / 100) * areaWidthPx,
+      y: (topPercent / 100) * areaHeightPx,
+    }));
+
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i + 1; j < points.length; j++) {
+        const a = points[i];
+        const b = points[j];
+        const dx = Math.abs(a.x - b.x);
+        const dy = Math.abs(a.y - b.y);
+        const aW = a.isHero ? heroBoxWidthPx : boxWidthPx;
+        const aH = a.isHero ? heroBoxHeightPx : boxHeightPx;
+        const bW = b.isHero ? heroBoxWidthPx : boxWidthPx;
+        const bH = b.isHero ? heroBoxHeightPx : boxHeightPx;
+        // Axis-aligned bounding-box overlap test: two boxes collide only if
+        // they overlap on BOTH axes at once. Seats sharing a row (small dy)
+        // are fine as long as they're spread far enough apart horizontally
+        // (large dx), and vice versa for seats sharing a column.
+        const xClear = dx >= (aW + bW) / 2;
+        const yClear = dy >= (aH + bH) / 2;
+        assert.ok(
+          xClear || yClear,
+          `seat-slot-${a.slot} and seat-slot-${b.slot} boxes would overlap (dx=${dx}px, dy=${dy}px)`,
+        );
+      }
+    }
+  });
+}
 
 test("all pre-existing table-view information a hand shows is still present after the layout change (AC5)", () => {
   const main = readMain();
@@ -234,7 +296,7 @@ test("all pre-existing table-view information a hand shows is still present afte
   for (const marker of [
     "data-street",
     "data-turn",
-    "data-hole-cards",
+    "hero-cards",
     "data-pot",
     "data-board",
     "data-seats",

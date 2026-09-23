@@ -33,7 +33,7 @@ body {
    2rem top padding is more waste than the phone screen can spare. */
 @media (max-width: 480px) {
   #app {
-    padding: 1.25rem 1rem;
+    padding: 0.75rem 1rem;
   }
 }
 
@@ -116,6 +116,16 @@ button {
 
 [data-profile] {
   color: #c8c0a8;
+  /* No-scroll in-hand fit (feature 020): an unbounded username could wrap
+     the topbar across several lines at phone width, eating into the
+     same vertical budget the in-hand view needs every pixel of — this
+     caps it to one line and truncates instead. */
+  display: inline-block;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 [data-topnav] button {
@@ -126,6 +136,19 @@ button {
   color: #8fa88f;
   cursor: default;
   opacity: 0.7;
+}
+
+/* No-scroll in-hand fit (feature 020): the topbar's spacing is generous
+   fixed overhead present above every view — a username long enough to
+   wrap it to two lines costs a phone-height viewport real room the
+   in-hand view can't spare, so this trims the padding/margin around it
+   (not its content) at the same narrow width feature 013 already
+   tightens the page gutter at. */
+@media (max-width: 480px) {
+  [data-topbar] {
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
 }
 
 [data-dashboard] {
@@ -144,26 +167,46 @@ button {
    exception — the SVGs are fixed-aspect-ratio and sized in rem so they
    scale down cleanly at phone width without distortion or overlap. */
 
+[data-tab] {
+  margin: 0.5rem 0;
+}
+
 [data-hand] {
   display: grid;
-  gap: 0.5rem;
-  margin: 1.25rem 0;
-  padding: 1rem;
+  gap: 0.3rem;
+  margin: 0.3rem 0;
+  padding: 0.5rem;
   border: 1px solid #2c5a3e;
   border-radius: 0.35rem;
 }
 
-[data-turn] {
-  font-weight: 600;
+/* No-scroll in-hand fit (feature 020): the browser's default <p> margin
+   doesn't collapse between CSS grid items the way it would in normal
+   flow — left alone it silently stacks on top of [data-hand]'s own
+   `gap` above, wasting vertical space the no-scroll budget can't spare.
+   Spacing between rows comes from `gap` alone. */
+[data-hand] > p {
   margin: 0;
 }
 
-[data-hole-cards],
+[data-turn] {
+  font-weight: 600;
+}
+
 [data-board] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
+}
+
+/* The human's own hole cards (feature 020) render inline inside their own
+   seat box, tagged .hero-cards, rather than a standalone line — a block
+   under the seat's status text so the cards sit at the bottom of that
+   seat's box. */
+.hero-cards {
+  display: block;
+  margin-top: 0.2rem;
 }
 
 .cards {
@@ -183,7 +226,7 @@ button {
 
 @media (max-width: 480px) {
   .card-img {
-    width: 2.1rem;
+    width: 1.8rem;
   }
 }
 
@@ -200,8 +243,8 @@ button {
    the shape to adapt there. */
 
 .table-oval {
-  margin: 1.25rem 0;
-  padding: 1rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
   border-radius: 0.75rem;
   background: radial-gradient(ellipse at center, #1f4a33 0%, #163325 72%);
   border: 3px solid #2c5a3e;
@@ -239,6 +282,40 @@ button {
 [data-seats] li[data-acting] {
   border-color: #b6e3b6;
   background: rgba(182, 227, 182, 0.16);
+}
+
+/* No-scroll in-hand fit (feature 020): below the oval breakpoint, the
+   seat grid's own row height (not the felt/padding) is what makes a
+   phone-height viewport need to scroll — each box's text/badges/cards
+   are unavoidable content (AC4), so this tightens the box's own
+   padding/line-height/gap instead of removing anything. */
+@media (max-width: 480px) {
+  .table-oval {
+    padding: 0.4rem;
+    margin: 0.4rem 0;
+  }
+
+  [data-seats] {
+    gap: 0.2rem;
+  }
+
+  [data-seats] li {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.72rem;
+    line-height: 1.1;
+  }
+
+  .hero-cards {
+    margin-top: 0.1rem;
+  }
+
+  .table-center {
+    margin-bottom: 0.3rem;
+  }
+
+  .table-center p {
+    font-size: 0.9rem;
+  }
 }
 
 .marker-badge {
@@ -288,9 +365,15 @@ button {
     padding: 1.5rem 1rem;
     /* Fill most of the viewport at common desktop sizes (feature 019 —
        #app no longer caps the page to a narrow column) while staying
-       clear of the viewport edges at very wide/narrow windows and
-       never growing absurdly large on ultra-wide monitors. */
-    width: min(92vw, 80rem);
+       clear of the viewport edges at very wide/narrow windows, never
+       growing absurdly large on ultra-wide monitors, and (feature 020)
+       never growing so TALL that the in-hand view needs to scroll —
+       the third min() term expresses a viewport-height budget as an
+       equivalent width via the fixed 3:2 aspect-ratio below (height =
+       width * 2/3, so capping height at Hvh means capping width at
+       H*1.5vh). Tuned against real headless-Chrome renders, not
+       calculated blind — see this feature's Implementation Notes. */
+    width: min(92vw, 80rem, 48vh);
     /* A real poker table is wide, not tall — 3:2 (matching a felt
        table's actual proportions), not the narrow portrait shape an
        earlier version of this rule mistakenly used. */
@@ -306,8 +389,21 @@ button {
     align-items: center;
     justify-content: center;
     gap: 0.15rem;
-    padding: 0 4.5rem;
+    /* Scales down with the same viewport-height budget as the felt
+       itself (feature 020) — the fixed 4.5rem gutter below was sized
+       for the old, always-large felt; against a felt that's now
+       sometimes much narrower it would eat most of the center area a
+       5-card board needs. */
+    padding: 0 clamp(0.75rem, 4vh, 4.5rem);
     margin: 0;
+  }
+
+  /* Board cards (feature 020): same viewport-height-scaled sizing as the
+     hero's own hole cards above, and for the same reason — up to 5 of
+     them share the table-center gutter, which shrinks along with the
+     felt. */
+  [data-board] .card-img {
+    width: clamp(2rem, 6.5vh, 5rem);
   }
 
   [data-seats] {
@@ -316,19 +412,53 @@ button {
     display: block;
   }
 
+  /* Box size scales with viewport HEIGHT, not just a flat 9rem (feature
+     020): the felt's own width formula above can bind on `vh` at a
+     short-but-wide desktop viewport (the no-scroll fit needs it to), and
+     a fixed 9rem box would then be nearly a third of a suddenly much
+     narrower felt — badly overlapping its neighbors. Scaling the box
+     with the same kind of unit keeps it proportionate. The clamp's own
+     max (9rem/0.8rem/1.8rem) is unchanged from before, so the existing
+     worst-case geometry checks (tall viewport, felt pinned to its vw/rem
+     cap, box at its max) are unaffected — this only ever makes a box
+     *smaller* than that already-verified worst case. */
   [data-seats] li {
     position: absolute;
-    width: 9rem;
-    font-size: 0.8rem;
-    padding: 0.25rem 0.4rem;
+    width: clamp(4.5rem, 12vh, 9rem);
+    font-size: clamp(0.5rem, 1.15vh, 0.8rem);
+    padding: clamp(0.15rem, 0.4vh, 0.25rem) clamp(0.25rem, 0.6vh, 0.4rem);
     transform: translate(-50%, -50%);
   }
 
   /* Card-back/revealed-card images inline in a seat box (feature 015)
      are shrunk further here specifically — the default size is sized
-     for the standalone hole-cards/board row, not a compact seat box. */
+     for the standalone hole-cards/board row, not a compact seat box.
+     Scales with the same viewport-height budget as the box itself
+     (feature 020) — see the comment on [data-seats] li above. */
   [data-seats] .card-img {
-    width: 1.8rem;
+    width: clamp(1rem, 2.75vh, 1.8rem);
+  }
+
+  /* The human's own seat is the one seat box that isn't a fixed size
+     (feature 020) — its hero-cards need real room and AC2 wants them
+     matching the shared 5rem default, not shrunk like an opponent's
+     small hidden-card backs above. width: auto lets the box grow to fit
+     two cards side by side instead of wrapping/clipping them.
+     Assumption (see Implementation Notes): the hero-card clamp's
+     preferred value is tied to the same viewport-height budget as the
+     rest of the seat boxes above, same reasoning — reaching the full
+     5rem bar whenever there's enough vertical room (e.g. a tall
+     viewport, or the felt not being vh-bound at all), but backing off
+     on the shortest common target viewport (1280x800) so the hero
+     seat's box doesn't blow past the felt's edges. Still always well
+     above the pre-existing 2.6rem AC2 floor. */
+  [data-seats] li[data-seat="you"] {
+    width: auto;
+    max-width: 16rem;
+  }
+
+  [data-seats] li[data-seat="you"] .card-img {
+    width: clamp(2.4rem, 7vh, 5rem);
   }
 
   /* Three seats across the top, three across the bottom (human at
@@ -386,7 +516,11 @@ button {
   font-size: 0.9rem;
   color: #c8c0a8;
   border-top: 1px solid #2c5a3e;
-  padding-top: 0.5rem;
+  padding-top: 0.4rem;
+}
+
+[data-action-log] p {
+  margin: 0;
 }
 
 [data-action-log] ul {
@@ -395,6 +529,13 @@ button {
   padding: 0;
   display: grid;
   gap: 0.2rem;
+  /* No-scroll in-hand fit (feature 020): the recent-actions list already
+     caps at 8 entries, but even that can run taller than the page's
+     vertical budget allows. Scroll inside this one small panel instead
+     of the whole page — the log stays fully present and readable, just
+     not all 8 lines visible at once without a small scroll here. */
+  max-height: 1.1rem;
+  overflow-y: auto;
 }
 
 [data-street-tag] {

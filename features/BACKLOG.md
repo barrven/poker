@@ -9,7 +9,7 @@
 
 | ID | Title | Status | Priority | Iteration | File |
 |----|-------|--------|----------|-----------|------|
-| 020 | In-hand view fits the viewport, larger cards, hole cards at the bottom | backlog | high | 6 | [020-inhand-viewport-fit.md](020-inhand-viewport-fit.md) |
+| 020 | In-hand view fits the viewport, larger cards, hole cards at the bottom | testing | high | 6 | [020-inhand-viewport-fit.md](020-inhand-viewport-fit.md) |
 
 <!-- 019 (drop the max-width column) is scheduled before 020 (in-hand
 no-scroll layout) because 020's fit math depends on how much width the

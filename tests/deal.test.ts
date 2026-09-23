@@ -298,7 +298,7 @@ test("a dealt hand's view shows street, board, the human's own hole cards, and p
   assert.ok(handBlock, "renderHand function not found");
   assert.match(handBlock, /data-street/);
   assert.match(handBlock, /data-board/);
-  assert.match(handBlock, /data-hole-cards/);
+  assert.match(handBlock, /hero-cards/);
   assert.match(handBlock, /hand\.holeCards/);
   assert.match(handBlock, /data-seats/);
   assert.match(handBlock, /hand\.button/);

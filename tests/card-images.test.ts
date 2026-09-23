@@ -170,7 +170,10 @@ test("the human's hole cards and the board render via the card-image helper, not
   const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
   const handBlock = main.match(/function renderHand[\s\S]*?(?=\nfunction )/)?.[0];
   assert.ok(handBlock, "renderHand function not found");
-  assert.match(handBlock, /data-hole-cards/);
+  // The human's hole cards render inline in their own seat box (feature
+  // 020), tagged with the hero-cards class rather than a standalone
+  // data-hole-cards line.
+  assert.match(handBlock, /hero-cards/);
   assert.match(handBlock, /data-board/);
   assert.match(handBlock, /renderCards\(hand\.holeCards\)/);
   assert.match(handBlock, /renderCards\(hand\.board\)/);
@@ -185,8 +188,9 @@ test("a computer seat shows card-back images while its hole cards are hidden, an
   const main = fs.readFileSync(path.join(root, "src/main.ts"), "utf8");
   const handBlock = main.match(/function renderHand[\s\S]*?(?=\nfunction )/)?.[0];
   assert.ok(handBlock, "renderHand function not found");
-  // Only computer seats get a hole-card slot — the human's own cards are
-  // shown separately via data-hole-cards, not duplicated in the seat list.
+  // Only computer seats get a hidden/revealed card-back or reveal slot —
+  // the human's own cards render via their own hero-cards branch instead
+  // (feature 020), not duplicated as hidden cards.
   assert.match(handBlock, /seat\.kind === "human"/);
   assert.match(handBlock, /renderHiddenCards\(2\)/);
   // Which seat is revealed comes from the settlement's own revealed list,
